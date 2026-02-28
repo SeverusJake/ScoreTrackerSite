@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Flip 7 - Arcade Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a12;
+      --bg-card: #12121a;
+      --bg-dark: #08080c;
+      --border: #2a2a3a;
+      --fg: #e8e8f0;
+      --muted: #5a5a6a;
+      --neon-cyan: #00f5ff;
+      --neon-pink: #ff00aa;
+      --neon-yellow: #f0ff00;
+      --neon-green: #00ff88;
+      --neon-orange: #ff6b00;
+      --danger: #ff2244;
+      --success: #00ff88;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: 'Share Tech Mono', monospace;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      margin: 0;
+      overscroll-behavior: none;
+    }
+
+    .font-arcade { font-family: 'Orbitron', sans-serif; }
+
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px);
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.2;
+    }
+
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0,245,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,255,0.02) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+    }
+
+    .text-glow-cyan { text-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan); }
+    .text-glow-pink { text-shadow: 0 0 8px var(--neon-pink), 0 0 16px var(--neon-pink); }
+    .text-glow-yellow { text-shadow: 0 0 8px var(--neon-yellow), 0 0 16px var(--neon-yellow); }
+    .text-glow-green { text-shadow: 0 0 8px var(--neon-green), 0 0 16px var(--neon-green); }
+
+    .player-card {
+      background: linear-gradient(145deg, var(--bg-card), var(--bg-dark));
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .player-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--player-color);
+      box-shadow: 0 0 15px var(--player-color);
+    }
+
+    .player-card.leader { border-color: var(--neon-yellow); }
+    .player-card.leader::after {
+      content: 'LEADER';
+      position: absolute;
+      top: 6px; right: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem;
+      font-weight: 700;
+      color: var(--bg);
+      background: var(--neon-yellow);
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+    }
+
+    .player-card.winner {
+      border-color: var(--neon-yellow);
+      animation: winner-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes winner-pulse {
+      0%, 100% { box-shadow: 0 0 15px rgba(240,255,0,0.3); }
+      50% { box-shadow: 0 0 30px rgba(240,255,0,0.6); }
+    }
+
+    .player-card.busted { animation: shake 0.4s ease; }
+    .player-card.banked { animation: flash 0.3s ease; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    @keyframes flash {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.4); }
+    }
+
+    .score-total {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .score-running {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--fg);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+    }
+
+    .btn:active:not(:disabled) { transform: scale(0.96); }
+    .btn:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
+    .btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    .btn-bank {
+      background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,255,136,0.05));
+      border-color: var(--neon-green);
+      color: var(--neon-green);
+    }
+    .btn-bank:not(:disabled):hover, .btn-bank.active {
+      background: var(--neon-green);
+      color: var(--bg);
+      box-shadow: 0 0 15px rgba(0,255,136,0.4);
+    }
+
+    .btn-bust {
+      background: linear-gradient(135deg, rgba(255,34,68,0.15), rgba(255,34,68,0.05));
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .btn-bust:not(:disabled):hover {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255,34,68,0.4);
+    }
+
+    .btn-flip7 {
+      background: linear-gradient(135deg, rgba(240,255,0,0.15), rgba(240,255,0,0.05));
+      border-color: var(--neon-yellow);
+      color: var(--neon-yellow);
+    }
+    .btn-flip7.active {
+      background: var(--neon-yellow);
+      color: var(--bg);
+      box-shadow: 0 0 20px rgba(240,255,0,0.5);
+    }
+
+    /* Number buttons */
+    .num-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--muted);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .num-btn:active { transform: scale(0.92); }
+
+    .num-btn.state-1 {
+      background: linear-gradient(135deg, var(--neon-green), #00cc66);
+      border-color: var(--neon-green);
+      color: var(--bg);
+      box-shadow: 0 0 12px rgba(0,255,136,0.5);
+    }
+
+    .num-btn.state-2 {
+      background: linear-gradient(135deg, var(--danger), #cc0033);
+      border-color: var(--danger);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255,34,68,0.6);
+    }
+
+    /* Special/Modifier buttons */
+    .mod-btn {
+      min-width: 44px;
+      height: 32px;
+      border-radius: 5px;
+      border: 2px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--muted);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mod-btn:active { transform: scale(0.94); }
+
+    .mod-btn.active {
+      background: var(--btn-color);
+      border-color: var(--btn-color);
+      color: var(--bg);
+      box-shadow: 0 0 10px var(--btn-color);
+    }
+
+    /* Second chance button */
+    .sc-btn {
+      padding: 0.35rem 0.6rem;
+      border-radius: 5px;
+      border: 2px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--muted);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .sc-btn.active {
+      background: linear-gradient(135deg, var(--neon-cyan), #00cccc);
+      border-color: var(--neon-cyan);
+      color: var(--bg);
+      box-shadow: 0 0 12px rgba(0,245,255,0.5);
+    }
+
+    .input-name {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--border);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--fg);
+      width: 100%;
+      padding: 0.15rem 0;
+      transition: border-color 0.2s;
+      text-transform: uppercase;
+    }
+    .input-name:focus { outline: none; border-bottom-color: var(--player-color); }
+
+    .input-small {
+      width: 48px;
+      background: var(--bg-dark);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      color: var(--fg);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.75rem;
+      text-align: center;
+      padding: 0.25rem;
+    }
+    .input-small:focus { outline: none; border-color: var(--neon-cyan); }
+
+    /* Tracker panel */
+    .tracker-panel {
+      background: linear-gradient(180deg, var(--bg-card), var(--bg-dark));
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tracker-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow));
+    }
+
+    .tracker-card {
+      width: 32px;
+      height: 40px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--fg);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .tracker-card .count {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.55rem;
+      color: var(--muted);
+    }
+
+    .tracker-card.depleted { opacity: 0.3; cursor: not-allowed; }
+
+    .stat-box {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem;
+      text-align: center;
+    }
+
+    .stat-box .label { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; }
+    .stat-box .value { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1rem; }
+
+    .remove-btn {
+      position: absolute;
+      top: 4px; left: 4px;
+      width: 18px; height: 18px;
+      border-radius: 3px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .player-card:hover .remove-btn { opacity: 1; }
+    .remove-btn:hover { background: var(--danger); color: #fff; }
+
+    .game-log {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.6rem;
+      font-size: 0.6rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .log-entry { padding: 0.15rem 0; border-bottom: 1px solid var(--border); }
+    .log-entry:last-child { border-bottom: none; }
+    .log-entry .time { color: var(--muted); margin-right: 0.5rem; }
+
+    .card-enter { opacity: 0; transform: translateY(15px) scale(0.97); }
+    .card-enter.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+      .scanlines { display: none; }
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+      .num-btn { width: 32px; height: 32px; font-size: 0.75rem; }
+      .tracker-card { width: 26px; height: 34px; font-size: 0.6rem; }
+      .score-total { font-size: 1.75rem; }
+      .score-running { font-size: 1.25rem; }
+    }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div class="grid-bg"></div>
+
+  <div class="relative z-10 min-h-screen px-2 py-3 md:px-6 md:py-5">
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto mb-3 md:mb-4">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div>
+          <h1 class="font-arcade text-2xl md:text-3xl font-black text-glow-cyan" style="color: var(--neon-cyan);">FLIP 7</h1>
+          <p class="text-[var(--muted)] text-xs tracking-widest uppercase">Arcade Tracker</p>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2 py-1.5">
+            <label class="text-[var(--muted)] text-xs uppercase">Target:</label>
+            <input type="number" id="targetScore" value="200" min="50" step="25" class="input-small w-12">
+          </div>
+          
+          <button class="btn" onclick="newRound()">Round</button>
+          <button class="btn" onclick="resetGame()" style="border-color: var(--danger); color: var(--danger);">Reset</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3 md:gap-4">
+      
+      <!-- Players Grid -->
+      <div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3" id="playersGrid"></div>
+        
+        <div class="mt-2 flex justify-center">
+          <button id="addPlayerBtn" class="btn" onclick="addPlayer()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+      </div>
+
+      <!-- Card Tracker -->
+      <div class="tracker-panel p-2.5 md:p-3">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-arcade text-xs font-bold text-glow-pink" style="color: var(--neon-pink);">DECK</h2>
+          <button class="btn text-xs py-1 px-2" onclick="resetDeck()">Reset</button>
+        </div>
+
+        <div class="mb-2">
+          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Numbers</div>
+          <div class="flex flex-wrap gap-0.5" id="numberCardsTracker"></div>
+        </div>
+
+        <div class="mb-2">
+          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Actions</div>
+          <div class="flex flex-wrap gap-0.5" id="actionCardsTracker"></div>
+        </div>
+
+        <div class="mb-3">
+          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Modifiers</div>
+          <div class="flex flex-wrap gap-0.5" id="modifierCardsTracker"></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1.5 mb-2">
+          <div class="stat-box">
+            <div class="label">Deck</div>
+            <div class="value text-glow-cyan" style="color: var(--neon-cyan);" id="deckRemaining">94</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Flipped</div>
+            <div class="value" style="color: var(--neon-yellow);" id="totalFlipped">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Bust%</div>
+            <div class="value" id="bustRiskDisplay">0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Log -->
+    <div class="max-w-7xl mx-auto mt-3">
+      <div class="game-log" id="gameLog">
+        <div class="log-entry"><span class="time">--:--</span><span style="color: var(--neon-cyan);">System initialized. Ready player one!</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Card definitions
+    const CARD_DEFS = {
+      numbers: [
+        { value: 0, copies: 1 }, { value: 1, copies: 1 }, { value: 2, copies: 2 },
+        { value: 3, copies: 3 }, { value: 4, copies: 4 }, { value: 5, copies: 5 },
+        { value: 6, copies: 6 }, { value: 7, copies: 7 }, { value: 8, copies: 8 },
+        { value: 9, copies: 9 }, { value: 10, copies: 10 }, { value: 11, copies: 11 },
+        { value: 12, copies: 12 }
+      ],
+      actions: [
+        { id: 'FRZ', name: 'Freeze', copies: 3, color: '#00f5ff' },
+        { id: 'F3', name: 'Flip 3', copies: 3, color: '#ff00aa' },
+        { id: '2ND', name: '2nd Chance', copies: 3, color: '#00ff88' }
+      ],
+      modifiers: [
+        { id: '+2', name: '+2', copies: 1, color: '#f0ff00', bonus: 2 },
+        { id: '+4', name: '+4', copies: 1, color: '#ff8800', bonus: 4 },
+        { id: '+6', name: '+6', copies: 1, color: '#ff4488', bonus: 6 },
+        { id: '+8', name: '+8', copies: 1, color: '#ff00aa', bonus: 8 },
+        { id: '+10', name: '+10', copies: 1, color: '#aa00ff', bonus: 10 },
+        { id: 'x2', name: 'x2', copies: 1, color: '#00ff00', multiplier: true }
+      ]
+    };
+
+    const PLAYER_COLORS = ['#00f5ff', '#ff00aa', '#f0ff00', '#00ff88', '#ff6b00', '#aa00ff', '#ff4488', '#00ffaa'];
+
+    // State
+    let players = [];
+    let nextPlayerId = 1;
+    let deckState = { numbers: {}, actions: {}, modifiers: {} };
+    let gameHistory = [];
+    const MAX_HISTORY = 10;
+
+    // Initialize
+    function initGame() {
+      players = [
+        createPlayer('Player 1'),
+        createPlayer('Player 2')
+      ];
+      initDeck();
+      renderPlayers();
+      renderCardTracker();
+      updateAddButton();
+    }
+
+    function createPlayer(name) {
+      return {
+        id: nextPlayerId++,
+        name: name,
+        totalScore: 0,
+        bustCount: 0,
+        color: PLAYER_COLORS[(nextPlayerId - 2) % PLAYER_COLORS.length],
+        // Button states: 0=normal, 1=green(flipped once), 2=red(flipped twice)
+        numberStates: Array(13).fill(0), // index 0-12
+        modifierStates: {}, // { '+2': true, 'x2': true, ... }
+        secondChanceActive: false, // Has second chance card available
+        flip7Bonus: 0 // 0 or 15
+      };
+    }
+
+    function initDeck() {
+      deckState = { numbers: {}, actions: {}, modifiers: {} };
+      
+      CARD_DEFS.numbers.forEach(c => {
+        deckState.numbers[c.value] = { total: c.copies, flipped: 0 };
+      });
+      CARD_DEFS.actions.forEach(c => {
+        deckState.actions[c.id] = { total: c.copies, flipped: 0, name: c.name, color: c.color };
+      });
+      CARD_DEFS.modifiers.forEach(c => {
+        deckState.modifiers[c.id] = { total: c.copies, flipped: 0, name: c.name, color: c.color };
+      });
+    }
+
+    // Calculate running total for a player
+    function calcRunningTotal(player) {
+      let sum = 0;
+      
+      // Sum unique numbers (each number counted once regardless of state 1 or 2)
+      for (let i = 0; i <= 12; i++) {
+        if (player.numberStates[i] >= 1) {
+          sum += i;
+        }
+      }
+      
+      // Apply x2 multiplier
+      if (player.modifierStates['x2']) {
+        sum *= 2;
+      }
+      
+      // Add modifier bonuses
+      CARD_DEFS.modifiers.forEach(m => {
+        if (m.bonus && player.modifierStates[m.id]) {
+          sum += m.bonus;
+        }
+      });
+      
+      // Add Flip 7 bonus
+      sum += player.flip7Bonus;
+      
+      return sum;
+    }
+
+    // Count unique numbers flipped (state >= 1)
+    function countUniqueNumbers(player) {
+      return player.numberStates.filter(s => s >= 1).length;
+    }
+
+    // Count red buttons (state === 2)
+    function countRedButtons(player) {
+      return player.numberStates.filter(s => s === 2).length;
+    }
+
+    // Check if bust button should be enabled
+    function shouldEnableBust(player) {
+      const redCount = countRedButtons(player);
+      if (redCount === 0) return false;
+      if (redCount >= 2) return true;
+      // 1 red button: bust enabled only if no second chance
+      return !player.secondChanceActive;
+    }
+
+    // Check if any button is active (for bank enable)
+    function hasAnyButtonActive(player) {
+      if (player.numberStates.some(s => s > 0)) return true;
+      if (Object.values(player.modifierStates).some(v => v)) return true;
+      if (player.secondChanceActive) return true;
+      return false;
+    }
+
+    // Check Flip 7 eligibility
+    function checkFlip7(player) {
+      return countUniqueNumbers(player) >= 7;
+    }
+
+    // Render players
+    function renderPlayers() {
+      const grid = document.getElementById('playersGrid');
+      grid.innerHTML = '';
+
+      const target = parseInt(document.getElementById('targetScore').value) || 200;
+      const highest = Math.max(...players.map(p => p.totalScore), 0);
+      const leaders = players.filter(p => p.totalScore === highest && p.totalScore > 0);
+      const winners = players.filter(p => p.totalScore >= target);
+
+      players.forEach((player, idx) => {
+        const isLeader = leaders.length >= 1 && leaders.includes(player) && highest > 0;
+        const isWinner = winners.length === 1 && winners[0].id === player.id;
+        const canRemove = players.length > 2;
+        const runningTotal = calcRunningTotal(player);
+        const flip7Eligible = checkFlip7(player);
+        const bustEnabled = shouldEnableBust(player);
+        const bankEnabled = hasAnyButtonActive(player);
+        const redCount = countRedButtons(player);
+
+        const card = document.createElement('div');
+        card.className = `player-card card-enter p-2.5 md:p-3 ${isWinner ? 'winner' : ''} ${isLeader && !isWinner ? 'leader' : ''}`;
+        card.style.setProperty('--player-color', player.color);
+        card.style.transitionDelay = `${idx * 30}ms`;
+        card.id = `player-${player.id}`;
+
+        card.innerHTML = `
+          ${canRemove ? `
+            <button class="remove-btn" onclick="removePlayer(${player.id})">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          ` : ''}
+          
+          <input type="text" class="input-name" value="${player.name}" 
+            onchange="updateName(${player.id}, this.value)">
+          
+          <div class="flex items-end justify-between gap-2 mt-1.5 mb-2">
+            <div>
+              <div class="text-[var(--muted)] text-xs uppercase">Total</div>
+              <div class="score-total text-glow-yellow" style="color: var(--neon-yellow);">${player.totalScore}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[var(--muted)] text-xs uppercase">Running</div>
+              <div class="score-running text-glow-cyan" style="color: var(--neon-cyan);">${runningTotal}</div>
+            </div>
+          </div>
+          
+          <!-- Number Buttons -->
+          <div class="flex flex-wrap gap-0.5 mb-1.5">
+            ${CARD_DEFS.numbers.map(n => `
+              <button class="num-btn state-${player.numberStates[n.value]}"
+                onclick="clickNumber(${player.id}, ${n.value})">${n.value}</button>
+            `).join('')}
+          </div>
+          
+          <!-- Special Row: Flip 7, 2nd Chance, Actions -->
+          <div class="flex flex-wrap gap-1 mb-1.5">
+            <button class="btn btn-flip7 ${flip7Eligible ? 'active' : ''}" 
+              disabled style="opacity: 1; cursor: default;">
+              FLIP7 ${player.flip7Bonus > 0 ? '+15' : ''}
+            </button>
+            <button class="sc-btn ${player.secondChanceActive ? 'active' : ''}"
+              onclick="toggleSecondChance(${player.id})">2ND</button>
+            ${CARD_DEFS.actions.map(a => `
+              <button class="mod-btn" style="--btn-color: ${a.color}"
+                onclick="clickAction(${player.id}, '${a.id}')">${a.id}</button>
+            `).join('')}
+          </div>
+          
+          <!-- Modifier Buttons -->
+          <div class="flex flex-wrap gap-0.5 mb-2">
+            ${CARD_DEFS.modifiers.map(m => `
+              <button class="mod-btn ${player.modifierStates[m.id] ? 'active' : ''}" 
+                style="--btn-color: ${m.color}"
+                onclick="clickModifier(${player.id}, '${m.id}')">${m.id}</button>
+            `).join('')}
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 gap-1.5">
+            <button class="btn btn-bank ${bankEnabled ? 'active' : ''}" 
+              onclick="bankPoints(${player.id})"
+              ${!bankEnabled ? 'disabled' : ''}>Bank</button>
+            <button class="btn btn-bust" 
+              onclick="bust(${player.id})"
+              ${!bustEnabled ? 'disabled' : ''}>Bust</button>
+          </div>
+          
+          <!-- Stats -->
+          <div class="mt-1.5 flex justify-center gap-3 text-xs text-[var(--muted)]">
+            <span>Busts: <span style="color: var(--danger);">${player.bustCount}</span></span>
+            ${redCount > 0 ? `<span style="color: var(--danger);">Duplicates: ${redCount}</span>` : ''}
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.card-enter').forEach(c => c.classList.add('visible'));
+      });
+    }
+
+    // Click number button: 0->1->2->0
+    function clickNumber(playerId, num) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+
+      const currentState = player.numberStates[num];
+      
+      if (currentState === 0) {
+        // 0 -> 1: Green, deck -1
+        player.numberStates[num] = 1;
+        deckFlipNumber(num, 1);
+        addLog(`${player.name} flipped ${num}`);
+      } else if (currentState === 1) {
+        // 1 -> 2: Red, deck -1
+        player.numberStates[num] = 2;
+        deckFlipNumber(num, 1);
+        addLog(`${player.name} drew duplicate ${num}!`, 'danger');
+      } else {
+        // 2 -> 0: Reset, deck +2
+        player.numberStates[num] = 0;
+        deckFlipNumber(num, -2);
+        addLog(`${player.name} returned ${num} copies to deck`);
+      }
+
+      // Check Flip 7
+      const wasFlip7 = player.flip7Bonus > 0;
+      const nowFlip7 = checkFlip7(player);
+      
+      if (!wasFlip7 && nowFlip7) {
+        player.flip7Bonus = 15;
+        addLog(`${player.name} FLIP 7 BONUS! +15`, 'success');
+      } else if (wasFlip7 && !nowFlip7) {
+        player.flip7Bonus = 0;
+        addLog(`${player.name} lost Flip 7 bonus`, 'warning');
+      }
+
+      renderPlayers();
+      updateBustRiskDisplay(player);
+    }
+
+    // Click modifier button
+    function clickModifier(playerId, modId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+
+      const modifierDef = CARD_DEFS.modifiers.find(m => m.id === modId);
+      
+      if (player.modifierStates[modId]) {
+        // Deactivate
+        delete player.modifierStates[modId];
+        deckFlipModifier(modId, -1);
+        addLog(`${player.name} returned ${modId}`);
+      } else {
+        // Activate
+        player.modifierStates[modId] = true;
+        deckFlipModifier(modId, 1);
+        addLog(`${player.name} flipped ${modId}`);
+      }
+
+      renderPlayers();
+    }
+
+    // Click action button (simplified - just flip in deck)
+    function clickAction(playerId, actionId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+
+      deckFlipAction(actionId, 1);
+      addLog(`${player.name} flipped ${actionId}`);
+      renderCardTracker();
+    }
+
+    // Toggle second chance
+    function toggleSecondChance(playerId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+
+      player.secondChanceActive = !player.secondChanceActive;
+      
+      if (player.secondChanceActive) {
+        deckFlipAction('2ND', 1);
+        addLog(`${player.name} has Second Chance!`, 'success');
+      } else {
+        deckFlipAction('2ND', -1);
+        addLog(`${player.name} used Second Chance`);
+      }
+
+      renderPlayers();
+      renderCardTracker();
+    }
+
+    // Deck operations
+    function deckFlipNumber(num, delta) {
+      const state = deckState.numbers[num];
+      if (state) {
+        state.flipped = Math.max(0, Math.min(state.total, state.flipped + delta));
+      }
+      renderCardTracker();
+    }
+
+    function deckFlipAction(actionId, delta) {
+      const state = deckState.actions[actionId];
+      if (state) {
+        state.flipped = Math.max(0, Math.min(state.total, state.flipped + delta));
+      }
+      renderCardTracker();
+    }
+
+    function deckFlipModifier(modId, delta) {
+      const state = deckState.modifiers[modId];
+      if (state) {
+        state.flipped = Math.max(0, Math.min(state.total, state.flipped + delta));
+      }
+      renderCardTracker();
+    }
+
+    // Bank points
+    function bankPoints(playerId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player || !hasAnyButtonActive(player)) return;
+
+      const runningTotal = calcRunningTotal(player);
+      player.totalScore += runningTotal;
+
+      addLog(`${player.name} BANKED ${runningTotal}!`, 'success');
+
+      const target = parseInt(document.getElementById('targetScore').value) || 200;
+      if (player.totalScore >= target) {
+        addLog(`${player.name} WINS with ${player.totalScore}!`, 'win');
+      }
+
+      // Reset player state
+      resetPlayerState(player);
+
+      renderPlayers();
+
+      const card = document.getElementById(`player-${playerId}`);
+      if (card) {
+        card.classList.add('banked');
+        setTimeout(() => card.classList.remove('banked'), 300);
+      }
+    }
+
+    // Bust
+    function bust(playerId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player || !shouldEnableBust(player)) return;
+
+      player.bustCount++;
+      addLog(`${player.name} BUSTED!`, 'danger');
+
+      resetPlayerState(player);
+      renderPlayers();
+
+      const card = document.getElementById(`player-${playerId}`);
+      if (card) {
+        card.classList.add('busted');
+        setTimeout(() => card.classList.remove('busted'), 400);
+      }
+    }
+
+    // Reset player button states
+    function resetPlayerState(player) {
+      player.numberStates = Array(13).fill(0);
+      player.modifierStates = {};
+      player.secondChanceActive = false;
+      player.flip7Bonus = 0;
+    }
+
+    // Render card tracker
+    function renderCardTracker() {
+      // Numbers
+      const numContainer = document.getElementById('numberCardsTracker');
+      numContainer.innerHTML = CARD_DEFS.numbers.map(c => {
+        const state = deckState.numbers[c.value];
+        const remaining = state.total - state.flipped;
+        const depleted = remaining === 0;
+        return `
+          <button class="tracker-card ${depleted ? 'depleted' : ''}" ${depleted ? 'disabled' : ''}>
+            <span>${c.value}</span>
+            <span class="count">${remaining}</span>
+          </button>
+        `;
+      }).join('');
+
+      // Actions
+      const actContainer = document.getElementById('actionCardsTracker');
+      actContainer.innerHTML = CARD_DEFS.actions.map(c => {
+        const state = deckState.actions[c.id];
+        const remaining = state.total - state.flipped;
+        const depleted = remaining === 0;
+        return `
+          <button class="tracker-card ${depleted ? 'depleted' : ''}" 
+            style="color: ${c.color}; border-color: ${c.color}40;" ${depleted ? 'disabled' : ''}>
+            <span>${c.id}</span>
+            <span class="count">${remaining}</span>
+          </button>
+        `;
+      }).join('');
+
+      // Modifiers
+      const modContainer = document.getElementById('modifierCardsTracker');
+      modContainer.innerHTML = CARD_DEFS.modifiers.map(c => {
+        const state = deckState.modifiers[c.id];
+        const remaining = state.total - state.flipped;
+        const depleted = remaining === 0;
+        return `
+          <button class="tracker-card ${depleted ? 'depleted' : ''}"
+            style="color: ${c.color}; border-color: ${c.color}40;" ${depleted ? 'disabled' : ''}>
+            <span>${c.id}</span>
+            <span class="count">${remaining}</span>
+          </button>
+        `;
+      }).join('');
+
+      updateDeckStats();
+    }
+
+    // Update deck stats
+    function updateDeckStats() {
+      let totalCards = 0;
+      let totalFlipped = 0;
+
+      Object.values(deckState.numbers).forEach(s => { totalCards += s.total; totalFlipped += s.flipped; });
+      Object.values(deckState.actions).forEach(s => { totalCards += s.total; totalFlipped += s.flipped; });
+      Object.values(deckState.modifiers).forEach(s => { totalCards += s.total; totalFlipped += s.flipped; });
+
+      document.getElementById('deckRemaining').textContent = totalCards - totalFlipped;
+      document.getElementById('totalFlipped').textContent = totalFlipped;
+    }
+
+    // Update bust risk for display
+    function updateBustRiskDisplay(player) {
+      let totalRemaining = 0;
+      Object.values(deckState.numbers).forEach(s => totalRemaining += s.total - s.flipped);
+      Object.values(deckState.actions).forEach(s => totalRemaining += s.total - s.flipped);
+      Object.values(deckState.modifiers).forEach(s => totalRemaining += s.total - s.flipped);
+
+      let bustCards = 0;
+      for (let i = 0; i <= 12; i++) {
+        if (player.numberStates[i] >= 1) {
+          const state = deckState.numbers[i];
+          if (state) {
+            bustCards += state.total - state.flipped;
+          }
+        }
+      }
+
+      const risk = totalRemaining > 0 ? Math.round((bustCards / totalRemaining) * 100) : 0;
+      const riskEl = document.getElementById('bustRiskDisplay');
+      riskEl.textContent = `${risk}%`;
+      
+      riskEl.className = 'value';
+      if (risk === 0) {
+        riskEl.style.color = 'var(--neon-green)';
+      } else if (risk <= 25) {
+        riskEl.style.color = 'var(--neon-yellow)';
+      } else if (risk <= 50) {
+        riskEl.style.color = 'var(--neon-orange)';
+      } else {
+        riskEl.style.color = 'var(--danger)';
+      }
+    }
+
+    // Player management
+    function updateName(playerId, name) {
+      const player = players.find(p => p.id === playerId);
+      if (player) player.name = (name || `Player ${playerId}`).toUpperCase().slice(0, 12);
+    }
+
+    function addPlayer() {
+      if (players.length >= 8) return;
+      const np = createPlayer(`P${players.length + 1}`);
+      players.push(np);
+      addLog(`${np.name} joined!`);
+      renderPlayers();
+      updateAddButton();
+    }
+
+    function removePlayer(playerId) {
+      if (players.length <= 2) return;
+      const player = players.find(p => p.id === playerId);
+      if (player) {
+        addLog(`${player.name} left.`);
+        players = players.filter(p => p.id !== playerId);
+        renderPlayers();
+        updateAddButton();
+      }
+    }
+
+    function updateAddButton() {
+      const btn = document.getElementById('addPlayerBtn');
+      btn.disabled = players.length >= 8;
+      btn.style.opacity = players.length >= 8 ? '0.4' : '1';
+    }
+
+    // Game controls
+    function newRound() {
+      players.forEach(p => resetPlayerState(p));
+      resetDeck();
+      addLog('New round started!');
+      renderPlayers();
+    }
+
+    function resetDeck() {
+      Object.values(deckState.numbers).forEach(s => s.flipped = 0);
+      Object.values(deckState.actions).forEach(s => s.flipped = 0);
+      Object.values(deckState.modifiers).forEach(s => s.flipped = 0);
+      renderCardTracker();
+    }
+
+    function resetGame() {
+      players.forEach(p => {
+        p.totalScore = 0;
+        p.bustCount = 0;
+        resetPlayerState(p);
+      });
+      resetDeck();
+      addLog('Game reset!');
+      renderPlayers();
+    }
+
+    // Logging
+    function addLog(message, type = 'normal') {
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      
+      let color = 'var(--fg)';
+      if (type === 'danger') color = 'var(--danger)';
+      if (type === 'success') color = 'var(--neon-green)';
+      if (type === 'win') color = 'var(--neon-yellow)';
+      if (type === 'warning') color = 'var(--neon-orange)';
+
+      gameHistory.unshift({ time, message, color });
+      if (gameHistory.length > MAX_HISTORY) gameHistory.pop();
+
+      const logEl = document.getElementById('gameLog');
+      logEl.innerHTML = gameHistory.map(e => `
+        <div class="log-entry">
+          <span class="time">${e.time}</span>
+          <span style="color: ${e.color}">${e.message}</span>
+        </div>
+      `).join('');
+    }
+
+    // Initialize
+    initGame();
+  </script>
+</body>
+</html>
