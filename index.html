@@ -58,9 +58,72 @@
     }
 
     .text-glow-cyan { text-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan); }
-    .text-glow-pink { text-shadow: 0 0 8px var(--neon-pink), 0 0 16px var(--neon-pink); }
     .text-glow-yellow { text-shadow: 0 0 8px var(--neon-yellow), 0 0 16px var(--neon-yellow); }
-    .text-glow-green { text-shadow: 0 0 8px var(--neon-green), 0 0 16px var(--neon-green); }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 300px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(0,245,255,0.2);
+      transform: scale(0.9);
+      transition: transform 0.2s ease;
+    }
+    .modal-overlay.active .modal-content { transform: scale(1); }
+
+    .modal-title { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.2rem; margin-bottom: 1rem; color: var(--neon-cyan); }
+    .modal-body { font-size: 0.9rem; margin-bottom: 1.5rem; color: var(--fg); }
+    .modal-input { 
+      width: 100%; 
+      background: var(--bg-dark); 
+      border: 2px solid var(--border); 
+      border-radius: 6px; 
+      padding: 0.5rem; 
+      color: var(--fg); 
+      font-family: 'Share Tech Mono', monospace; 
+      text-align: center;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .modal-input:focus { outline: none; border-color: var(--neon-cyan); }
+
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: center; }
+    .modal-btn {
+      padding: 0.5rem 1.5rem;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--fg);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .modal-btn:hover { border-color: var(--fg); }
+    .modal-btn.confirm { border-color: var(--neon-green); color: var(--neon-green); background: rgba(0,255,136,0.1); }
+    .modal-btn.confirm:hover { background: var(--neon-green); color: var(--bg); }
+    .modal-btn.danger { border-color: var(--danger); color: var(--danger); background: rgba(255,34,68,0.1); }
+    .modal-btn.danger:hover { background: var(--danger); color: #fff; }
+
 
     .player-card {
       background: linear-gradient(145deg, var(--bg-card), var(--bg-dark));
@@ -180,14 +243,22 @@
     }
 
     .btn-flip7 {
-      background: linear-gradient(135deg, rgba(240,255,0,0.15), rgba(240,255,0,0.05));
-      border-color: var(--neon-yellow);
-      color: var(--neon-yellow);
+      background: var(--bg-dark);
+      border-color: var(--border);
+      color: var(--muted);
     }
     .btn-flip7.active {
-      background: var(--neon-yellow);
-      color: var(--bg);
-      box-shadow: 0 0 20px rgba(240,255,0,0.5);
+      background: var(--neon-yellow) !important;
+      border-color: var(--neon-yellow) !important;
+      color: var(--bg) !important;
+      box-shadow: 0 0 12px rgba(240,255,0,0.4);
+    }
+    
+    .btn-reset-p {
+      padding: 0.3rem 0.5rem;
+      font-size: 0.6rem;
+      border-color: var(--danger);
+      color: var(--danger);
     }
 
     /* Number buttons */
@@ -223,8 +294,16 @@
       color: #fff;
       box-shadow: 0 0 15px rgba(255,34,68,0.6);
     }
+    
+    /* State 3: Protected Duplicate (Yellow) */
+    .num-btn.state-3 {
+      background: linear-gradient(135deg, var(--neon-yellow), #ccaa00);
+      border-color: var(--neon-yellow);
+      color: var(--bg);
+      box-shadow: 0 0 15px rgba(240,255,0,0.6);
+    }
 
-    /* Special/Modifier buttons */
+    /* Action/Modifier buttons */
     .mod-btn {
       min-width: 44px;
       height: 32px;
@@ -250,26 +329,18 @@
       color: var(--bg);
       box-shadow: 0 0 10px var(--btn-color);
     }
-
-    /* Second chance button */
-    .sc-btn {
-      padding: 0.35rem 0.6rem;
-      border-radius: 5px;
-      border: 2px solid var(--border);
-      background: var(--bg-dark);
-      color: var(--muted);
-      font-family: 'Orbitron', sans-serif;
-      font-size: 0.6rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.12s ease;
+    
+    /* Highlight style for Action Cards */
+    .mod-btn.highlight {
+       border-color: var(--btn-color);
+       color: var(--btn-color);
+       background: rgba(0,0,0,0.3);
     }
-
-    .sc-btn.active {
-      background: linear-gradient(135deg, var(--neon-cyan), #00cccc);
-      border-color: var(--neon-cyan);
+    
+    .mod-btn.highlight.active {
+      background: var(--btn-color);
       color: var(--bg);
-      box-shadow: 0 0 12px rgba(0,245,255,0.5);
+      box-shadow: 0 0 10px var(--btn-color);
     }
 
     .input-name {
@@ -286,6 +357,23 @@
       text-transform: uppercase;
     }
     .input-name:focus { outline: none; border-bottom-color: var(--player-color); }
+
+    /* Status indicator */
+    .status-indicator {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      background: rgba(0,245,255,0.15);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(0,245,255,0.3);
+    }
+    
+    .status-indicator.used {
+      background: rgba(255,34,68,0.15);
+      color: var(--danger);
+      border: 1px solid rgba(255,34,68,0.3);
+    }
 
     .input-small {
       width: 48px;
@@ -318,7 +406,7 @@
     }
 
     .tracker-card {
-      width: 32px;
+      width: 36px; 
       height: 40px;
       border-radius: 4px;
       border: 1px solid var(--border);
@@ -379,8 +467,10 @@
       border-radius: 6px;
       padding: 0.5rem 0.6rem;
       font-size: 0.6rem;
-      max-height: 120px;
-      overflow-y: auto;
+      height: 150px;
+      overflow-y: scroll;
+      display: flex;
+      flex-direction: column;
     }
 
     .log-entry { padding: 0.15rem 0; border-bottom: 1px solid var(--border); }
@@ -402,10 +492,9 @@
       .scanlines { display: none; }
     }
 
-    /* Mobile optimizations */
     @media (max-width: 640px) {
       .num-btn { width: 32px; height: 32px; font-size: 0.75rem; }
-      .tracker-card { width: 26px; height: 34px; font-size: 0.6rem; }
+      .tracker-card { width: 30px; height: 36px; font-size: 0.6rem; }
       .score-total { font-size: 1.75rem; }
       .score-running { font-size: 1.25rem; }
     }
@@ -419,8 +508,20 @@
   <div class="scanlines"></div>
   <div class="grid-bg"></div>
 
+  <!-- Custom Modal -->
+  <div id="customModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-title" id="modalTitle">Confirm</div>
+      <div class="modal-body" id="modalBody">Are you sure?</div>
+      <input type="number" id="modalInput" class="modal-input" style="display:none;">
+      <div class="modal-actions">
+        <button class="modal-btn" id="modalCancelBtn" onclick="closeModal(false)">Cancel</button>
+        <button class="modal-btn confirm" id="modalConfirmBtn" onclick="closeModal(true)">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <div class="relative z-10 min-h-screen px-2 py-3 md:px-6 md:py-5">
-    <!-- Header -->
     <header class="max-w-7xl mx-auto mb-3 md:mb-4">
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
         <div>
@@ -429,9 +530,9 @@
         </div>
         
         <div class="flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2 py-1.5">
-            <label class="text-[var(--muted)] text-xs uppercase">Target:</label>
-            <input type="number" id="targetScore" value="200" min="50" step="25" class="input-small w-12">
+          <div class="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2 py-1.5 cursor-pointer hover:border-[var(--neon-cyan)] transition-colors" onclick="changeTargetPrompt()">
+            <label class="text-[var(--muted)] text-xs uppercase cursor-pointer">Target:</label>
+            <span id="targetScoreDisplay" class="font-arcade text-xs text-[var(--neon-cyan)]">200</span>
           </div>
           
           <button class="btn" onclick="newRound()">Round</button>
@@ -440,10 +541,8 @@
       </div>
     </header>
 
-    <!-- Main Layout -->
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3 md:gap-4">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3 md:gap-4">
       
-      <!-- Players Grid -->
       <div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3" id="playersGrid"></div>
         
@@ -455,7 +554,6 @@
         </div>
       </div>
 
-      <!-- Card Tracker -->
       <div class="tracker-panel p-2.5 md:p-3">
         <div class="flex items-center justify-between mb-2">
           <h2 class="font-arcade text-xs font-bold text-glow-pink" style="color: var(--neon-pink);">DECK</h2>
@@ -468,8 +566,8 @@
         </div>
 
         <div class="mb-2">
-          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Actions</div>
-          <div class="flex flex-wrap gap-0.5" id="actionCardsTracker"></div>
+          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Actions (Click to +1)</div>
+          <div class="flex flex-wrap gap-1" id="actionCardsTracker"></div>
         </div>
 
         <div class="mb-3">
@@ -494,7 +592,6 @@
       </div>
     </div>
 
-    <!-- Game Log -->
     <div class="max-w-7xl mx-auto mt-3">
       <div class="game-log" id="gameLog">
         <div class="log-entry"><span class="time">--:--</span><span style="color: var(--neon-cyan);">System initialized. Ready player one!</span></div>
@@ -503,7 +600,6 @@
   </div>
 
   <script>
-    // Card definitions
     const CARD_DEFS = {
       numbers: [
         { value: 0, copies: 1 }, { value: 1, copies: 1 }, { value: 2, copies: 2 },
@@ -515,7 +611,7 @@
       actions: [
         { id: 'FRZ', name: 'Freeze', copies: 3, color: '#00f5ff' },
         { id: 'F3', name: 'Flip 3', copies: 3, color: '#ff00aa' },
-        { id: '2ND', name: '2nd Chance', copies: 3, color: '#00ff88' }
+        { id: '2ND', name: 'Second Chance', copies: 3, color: '#00ff88' }
       ],
       modifiers: [
         { id: '+2', name: '+2', copies: 1, color: '#f0ff00', bonus: 2 },
@@ -529,14 +625,15 @@
 
     const PLAYER_COLORS = ['#00f5ff', '#ff00aa', '#f0ff00', '#00ff88', '#ff6b00', '#aa00ff', '#ff4488', '#00ffaa'];
 
-    // State
     let players = [];
     let nextPlayerId = 1;
     let deckState = { numbers: {}, actions: {}, modifiers: {} };
     let gameHistory = [];
-    const MAX_HISTORY = 10;
+    let targetScore = 200;
+    
+    // Modal state
+    let modalResolver = null;
 
-    // Initialize
     function initGame() {
       players = [
         createPlayer('Player 1'),
@@ -555,12 +652,53 @@
         totalScore: 0,
         bustCount: 0,
         color: PLAYER_COLORS[(nextPlayerId - 2) % PLAYER_COLORS.length],
-        // Button states: 0=normal, 1=green(flipped once), 2=red(flipped twice)
-        numberStates: Array(13).fill(0), // index 0-12
-        modifierStates: {}, // { '+2': true, 'x2': true, ... }
-        secondChanceActive: false, // Has second chance card available
-        flip7Bonus: 0 // 0 or 15
+        numberStates: Array(13).fill(0), // 0:Off, 1:On, 2:Red, 3:Yellow
+        modifierStates: {},
+        secondChanceActive: false, // Has card available to use
+        usedSecondChanceCount: 0, // Display counter
+        flip7Bonus: 0
       };
+    }
+    
+    // --- Modal Logic ---
+    function showModal(title, body, type = 'confirm', defaultValue = '') {
+      return new Promise((resolve) => {
+        modalResolver = resolve;
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('modalBody').innerText = body;
+        
+        const inputEl = document.getElementById('modalInput');
+        const confirmBtn = document.getElementById('modalConfirmBtn');
+        
+        if (type === 'input') {
+          inputEl.style.display = 'block';
+          inputEl.value = defaultValue;
+          confirmBtn.className = 'modal-btn confirm';
+        } else {
+          inputEl.style.display = 'none';
+          if (type === 'danger') {
+             confirmBtn.className = 'modal-btn danger';
+          } else {
+             confirmBtn.className = 'modal-btn confirm';
+          }
+        }
+        
+        document.getElementById('customModal').classList.add('active');
+        if (type === 'input') inputEl.focus();
+      });
+    }
+
+    async function closeModal(confirmed) {
+      document.getElementById('customModal').classList.remove('active');
+      if (modalResolver) {
+        if (confirmed && document.getElementById('modalInput').style.display === 'block') {
+           const val = document.getElementById('modalInput').value;
+           modalResolver(val);
+        } else {
+           modalResolver(confirmed);
+        }
+        modalResolver = null;
+      }
     }
 
     function initDeck() {
@@ -577,55 +715,38 @@
       });
     }
 
-    // Calculate running total for a player
     function calcRunningTotal(player) {
       let sum = 0;
-      
-      // Sum unique numbers (each number counted once regardless of state 1 or 2)
       for (let i = 0; i <= 12; i++) {
-        if (player.numberStates[i] >= 1) {
+        if (player.numberStates[i] >= 1) { // 1, 2, 3 all count as having the number
           sum += i;
         }
       }
-      
-      // Apply x2 multiplier
       if (player.modifierStates['x2']) {
         sum *= 2;
       }
-      
-      // Add modifier bonuses
       CARD_DEFS.modifiers.forEach(m => {
         if (m.bonus && player.modifierStates[m.id]) {
           sum += m.bonus;
         }
       });
-      
-      // Add Flip 7 bonus
       sum += player.flip7Bonus;
-      
       return sum;
     }
 
-    // Count unique numbers flipped (state >= 1)
     function countUniqueNumbers(player) {
       return player.numberStates.filter(s => s >= 1).length;
     }
 
-    // Count red buttons (state === 2)
     function countRedButtons(player) {
       return player.numberStates.filter(s => s === 2).length;
     }
 
-    // Check if bust button should be enabled
+    // Check if bust conditions are met (Red buttons exist without protection)
     function shouldEnableBust(player) {
-      const redCount = countRedButtons(player);
-      if (redCount === 0) return false;
-      if (redCount >= 2) return true;
-      // 1 red button: bust enabled only if no second chance
-      return !player.secondChanceActive;
+      return countRedButtons(player) > 0;
     }
 
-    // Check if any button is active (for bank enable)
     function hasAnyButtonActive(player) {
       if (player.numberStates.some(s => s > 0)) return true;
       if (Object.values(player.modifierStates).some(v => v)) return true;
@@ -633,20 +754,34 @@
       return false;
     }
 
-    // Check Flip 7 eligibility
+    // Updated Flip 7 Check: Must have 7 unique numbers AND no red cards
     function checkFlip7(player) {
+      if (countRedButtons(player) > 0) return false;
       return countUniqueNumbers(player) >= 7;
     }
+    
+    // Helper to update Flip 7 status
+    function updateFlip7Status(player) {
+      const wasFlip7 = player.flip7Bonus > 0;
+      const nowFlip7 = checkFlip7(player);
+      
+      if (!wasFlip7 && nowFlip7) {
+        player.flip7Bonus = 15;
+        addLog(`${player.name} FLIP 7 BONUS!`, 'success');
+      } else if (wasFlip7 && !nowFlip7) {
+        player.flip7Bonus = 0;
+        // Only log loss if they actually had the bonus
+        if (wasFlip7) addLog(`${player.name} lost Flip 7 bonus`, 'warning');
+      }
+    }
 
-    // Render players
     function renderPlayers() {
       const grid = document.getElementById('playersGrid');
       grid.innerHTML = '';
 
-      const target = parseInt(document.getElementById('targetScore').value) || 200;
       const highest = Math.max(...players.map(p => p.totalScore), 0);
       const leaders = players.filter(p => p.totalScore === highest && p.totalScore > 0);
-      const winners = players.filter(p => p.totalScore >= target);
+      const winners = players.filter(p => p.totalScore >= targetScore);
 
       players.forEach((player, idx) => {
         const isLeader = leaders.length >= 1 && leaders.includes(player) && highest > 0;
@@ -654,15 +789,30 @@
         const canRemove = players.length > 2;
         const runningTotal = calcRunningTotal(player);
         const flip7Eligible = checkFlip7(player);
-        const bustEnabled = shouldEnableBust(player);
-        const bankEnabled = hasAnyButtonActive(player);
-        const redCount = countRedButtons(player);
+        const isBustSituation = shouldEnableBust(player);
+        const bankEnabled = hasAnyButtonActive(player) && !isBustSituation;
+        const bustEnabled = isBustSituation;
 
         const card = document.createElement('div');
         card.className = `player-card card-enter p-2.5 md:p-3 ${isWinner ? 'winner' : ''} ${isLeader && !isWinner ? 'leader' : ''}`;
         card.style.setProperty('--player-color', player.color);
         card.style.transitionDelay = `${idx * 30}ms`;
         card.id = `player-${player.id}`;
+
+        // Generate Status Indicators
+        let statusHtml = '';
+        // Display Used SC tags
+        for(let k=0; k<player.usedSecondChanceCount; k++) {
+           statusHtml += '<span class="status-indicator used">USED 2ND CHANCE</span>';
+        }
+        // Display Available SC tag
+        if(player.secondChanceActive) {
+           statusHtml += '<span class="status-indicator">2ND CHANCE ON</span>';
+        }
+        
+        if(player.flip7Bonus > 0) {
+           statusHtml += '<span class="status-indicator" style="background: rgba(240,255,0,0.15); color: var(--neon-yellow); border-color: rgba(240,255,0,0.3);">FLIP 7 BONUS</span>';
+        }
 
         card.innerHTML = `
           ${canRemove ? `
@@ -673,10 +823,13 @@
             </button>
           ` : ''}
           
-          <input type="text" class="input-name" value="${player.name}" 
-            onchange="updateName(${player.id}, this.value)">
+          <div class="flex items-center justify-between">
+            <input type="text" class="input-name" value="${player.name}" 
+              onchange="updateName(${player.id}, this.value)">
+            <button class="btn btn-reset-p" onclick="resetPlayerScore(${player.id})">RST</button>
+          </div>
           
-          <div class="flex items-end justify-between gap-2 mt-1.5 mb-2">
+          <div class="flex items-end justify-between gap-2 mt-1.5 mb-1">
             <div>
               <div class="text-[var(--muted)] text-xs uppercase">Total</div>
               <div class="score-total text-glow-yellow" style="color: var(--neon-yellow);">${player.totalScore}</div>
@@ -687,6 +840,11 @@
             </div>
           </div>
           
+          <!-- Status Indicators -->
+          <div class="flex flex-wrap gap-1 mb-1.5 min-h-[20px] items-center">
+            ${statusHtml}
+          </div>
+          
           <!-- Number Buttons -->
           <div class="flex flex-wrap gap-0.5 mb-1.5">
             ${CARD_DEFS.numbers.map(n => `
@@ -695,18 +853,16 @@
             `).join('')}
           </div>
           
-          <!-- Special Row: Flip 7, 2nd Chance, Actions -->
+          <!-- Actions Row -->
           <div class="flex flex-wrap gap-1 mb-1.5">
-            <button class="btn btn-flip7 ${flip7Eligible ? 'active' : ''}" 
-              disabled style="opacity: 1; cursor: default;">
-              FLIP7 ${player.flip7Bonus > 0 ? '+15' : ''}
-            </button>
-            <button class="sc-btn ${player.secondChanceActive ? 'active' : ''}"
-              onclick="toggleSecondChance(${player.id})">2ND</button>
-            ${CARD_DEFS.actions.map(a => `
-              <button class="mod-btn" style="--btn-color: ${a.color}"
+             ${CARD_DEFS.actions.map(a => `
+              <button class="mod-btn highlight ${player.secondChanceActive && a.id === '2ND' ? 'active' : ''}" 
+                style="--btn-color: ${a.color}"
                 onclick="clickAction(${player.id}, '${a.id}')">${a.id}</button>
             `).join('')}
+            <button class="btn btn-flip7 ${flip7Eligible ? 'active' : ''}" disabled style="opacity: 1; margin-left: auto;">
+              FLIP7
+            </button>
           </div>
           
           <!-- Modifier Buttons -->
@@ -731,7 +887,6 @@
           <!-- Stats -->
           <div class="mt-1.5 flex justify-center gap-3 text-xs text-[var(--muted)]">
             <span>Busts: <span style="color: var(--danger);">${player.bustCount}</span></span>
-            ${redCount > 0 ? `<span style="color: var(--danger);">Duplicates: ${redCount}</span>` : ''}
           </div>
         `;
 
@@ -743,98 +898,124 @@
       });
     }
 
-    // Click number button: 0->1->2->0
     function clickNumber(playerId, num) {
       const player = players.find(p => p.id === playerId);
       if (!player) return;
 
       const currentState = player.numberStates[num];
       
+      // Cycle Logic
       if (currentState === 0) {
-        // 0 -> 1: Green, deck -1
+        // Gray -> Green
         player.numberStates[num] = 1;
         deckFlipNumber(num, 1);
         addLog(`${player.name} flipped ${num}`);
       } else if (currentState === 1) {
-        // 1 -> 2: Red, deck -1
-        player.numberStates[num] = 2;
-        deckFlipNumber(num, 1);
-        addLog(`${player.name} drew duplicate ${num}!`, 'danger');
-      } else {
-        // 2 -> 0: Reset, deck +2
+        // Green -> Duplicate
+        if (player.secondChanceActive) {
+          // Auto-protect
+          player.numberStates[num] = 3; // Yellow
+          player.secondChanceActive = false;
+          player.usedSecondChanceCount++;
+          deckFlipNumber(num, 1);
+          addLog(`${player.name} used Second Chance on ${num}!`, 'success');
+        } else {
+          // Unprotected Red
+          player.numberStates[num] = 2; // Red
+          deckFlipNumber(num, 1);
+          addLog(`${player.name} drew duplicate ${num}!`, 'danger');
+        }
+      } else if (currentState === 2) {
+        // Red -> Gray (Return both cards)
         player.numberStates[num] = 0;
         deckFlipNumber(num, -2);
         addLog(`${player.name} returned ${num} copies to deck`);
+      } else if (currentState === 3) {
+        // Yellow -> Gray (Un-use SC)
+        player.numberStates[num] = 0;
+        deckFlipNumber(num, -2);
+        // Recover the SC card usage
+        if (player.usedSecondChanceCount > 0) {
+            player.usedSecondChanceCount--;
+            player.secondChanceActive = true; // Return to hand
+            addLog(`${player.name} reversed SC usage on ${num}`);
+        }
       }
 
-      // Check Flip 7
-      const wasFlip7 = player.flip7Bonus > 0;
-      const nowFlip7 = checkFlip7(player);
-      
-      if (!wasFlip7 && nowFlip7) {
-        player.flip7Bonus = 15;
-        addLog(`${player.name} FLIP 7 BONUS! +15`, 'success');
-      } else if (wasFlip7 && !nowFlip7) {
-        player.flip7Bonus = 0;
-        addLog(`${player.name} lost Flip 7 bonus`, 'warning');
-      }
+      updateFlip7Status(player);
 
       renderPlayers();
       updateBustRiskDisplay(player);
     }
 
-    // Click modifier button
     function clickModifier(playerId, modId) {
       const player = players.find(p => p.id === playerId);
       if (!player) return;
-
-      const modifierDef = CARD_DEFS.modifiers.find(m => m.id === modId);
       
       if (player.modifierStates[modId]) {
-        // Deactivate
         delete player.modifierStates[modId];
         deckFlipModifier(modId, -1);
         addLog(`${player.name} returned ${modId}`);
       } else {
-        // Activate
         player.modifierStates[modId] = true;
         deckFlipModifier(modId, 1);
         addLog(`${player.name} flipped ${modId}`);
       }
-
+      
       renderPlayers();
+      updateBustRiskDisplay(player);
     }
 
-    // Click action button (simplified - just flip in deck)
+    // Logic for Action Buttons
     function clickAction(playerId, actionId) {
       const player = players.find(p => p.id === playerId);
       if (!player) return;
 
-      deckFlipAction(actionId, 1);
-      addLog(`${player.name} flipped ${actionId}`);
-      renderCardTracker();
-    }
+      const actionDef = CARD_DEFS.actions.find(a => a.id === actionId);
 
-    // Toggle second chance
-    function toggleSecondChance(playerId) {
-      const player = players.find(p => p.id === playerId);
-      if (!player) return;
-
-      player.secondChanceActive = !player.secondChanceActive;
-      
-      if (player.secondChanceActive) {
-        deckFlipAction('2ND', 1);
-        addLog(`${player.name} has Second Chance!`, 'success');
+      if (actionId === '2ND') {
+        if (player.secondChanceActive) {
+          // Toggle OFF (Return to deck)
+          player.secondChanceActive = false;
+          deckFlipAction('2ND', -1);
+          addLog(`${player.name} returned Second Chance`);
+        } else {
+          // Toggle ON (Pick up from deck)
+          // Rule: "If number button is red and press second chance, the first red number button will change to yellow"
+          const redIndex = player.numberStates.findIndex(s => s === 2);
+          if (redIndex !== -1) {
+            // Immediate usage
+            player.numberStates[redIndex] = 3; // Yellow
+            player.usedSecondChanceCount++;
+            deckFlipAction('2ND', 1); // Take from deck
+            addLog(`${player.name} used SC on duplicate ${redIndex}!`, 'success');
+          } else {
+            // Just hold it
+            player.secondChanceActive = true;
+            deckFlipAction('2ND', 1);
+            addLog(`${player.name} has Second Chance`, 'success');
+          }
+        }
       } else {
-        deckFlipAction('2ND', -1);
-        addLog(`${player.name} used Second Chance`);
+        // FRZ and F3 Logic
+        deckFlipAction(actionId, 1); 
+        addLog(`${player.name} used ${actionDef.name}`);
+        
+        const btn = document.querySelector(`#player-${playerId} .mod-btn[onclick*="'${actionId}'"]`);
+        if(btn) {
+          btn.classList.add('active');
+          setTimeout(() => btn.classList.remove('active'), 300);
+        }
       }
+
+      // Check Flip 7 status changes (e.g. fixing a red card might restore Flip 7)
+      updateFlip7Status(player);
 
       renderPlayers();
       renderCardTracker();
+      updateBustRiskDisplay(player);
     }
 
-    // Deck operations
     function deckFlipNumber(num, delta) {
       const state = deckState.numbers[num];
       if (state) {
@@ -859,7 +1040,26 @@
       renderCardTracker();
     }
 
-    // Bank points
+    function deckAddAction(actionId) {
+       const state = deckState.actions[actionId];
+       if (state && state.flipped > 0) {
+         state.flipped -= 1;
+         addLog(`Deck: Added ${actionId} back`);
+         renderCardTracker();
+         if(players.length > 0) updateBustRiskDisplay(players[0]);
+       }
+    }
+    
+    async function changeTargetPrompt() {
+      const val = await showModal('Target Score', 'Enter new target score:', 'input', targetScore);
+      if (val !== null && !isNaN(val) && val > 0) {
+        targetScore = parseInt(val);
+        document.getElementById('targetScoreDisplay').innerText = targetScore;
+        addLog(`Target score set to ${targetScore}`);
+        renderPlayers();
+      }
+    }
+
     function bankPoints(playerId) {
       const player = players.find(p => p.id === playerId);
       if (!player || !hasAnyButtonActive(player)) return;
@@ -869,14 +1069,11 @@
 
       addLog(`${player.name} BANKED ${runningTotal}!`, 'success');
 
-      const target = parseInt(document.getElementById('targetScore').value) || 200;
-      if (player.totalScore >= target) {
+      if (player.totalScore >= targetScore) {
         addLog(`${player.name} WINS with ${player.totalScore}!`, 'win');
       }
 
-      // Reset player state
-      resetPlayerState(player);
-
+      resetPlayerRoundState(player);
       renderPlayers();
 
       const card = document.getElementById(`player-${playerId}`);
@@ -886,7 +1083,6 @@
       }
     }
 
-    // Bust
     function bust(playerId) {
       const player = players.find(p => p.id === playerId);
       if (!player || !shouldEnableBust(player)) return;
@@ -894,7 +1090,7 @@
       player.bustCount++;
       addLog(`${player.name} BUSTED!`, 'danger');
 
-      resetPlayerState(player);
+      resetPlayerRoundState(player);
       renderPlayers();
 
       const card = document.getElementById(`player-${playerId}`);
@@ -904,17 +1100,29 @@
       }
     }
 
-    // Reset player button states
-    function resetPlayerState(player) {
+    function resetPlayerRoundState(player) {
       player.numberStates = Array(13).fill(0);
       player.modifierStates = {};
       player.secondChanceActive = false;
+      player.usedSecondChanceCount = 0;
       player.flip7Bonus = 0;
     }
 
-    // Render card tracker
+    async function resetPlayerScore(playerId) {
+      const confirmed = await showModal('Reset Player', 'Reset score to 0 and clear hand?', 'danger');
+      if (confirmed) {
+        const player = players.find(p => p.id === playerId);
+        if(player) {
+          player.totalScore = 0;
+          player.bustCount = 0;
+          resetPlayerRoundState(player);
+          addLog(`${player.name} score reset.`);
+          renderPlayers();
+        }
+      }
+    }
+
     function renderCardTracker() {
-      // Numbers
       const numContainer = document.getElementById('numberCardsTracker');
       numContainer.innerHTML = CARD_DEFS.numbers.map(c => {
         const state = deckState.numbers[c.value];
@@ -928,7 +1136,6 @@
         `;
       }).join('');
 
-      // Actions
       const actContainer = document.getElementById('actionCardsTracker');
       actContainer.innerHTML = CARD_DEFS.actions.map(c => {
         const state = deckState.actions[c.id];
@@ -936,14 +1143,15 @@
         const depleted = remaining === 0;
         return `
           <button class="tracker-card ${depleted ? 'depleted' : ''}" 
-            style="color: ${c.color}; border-color: ${c.color}40;" ${depleted ? 'disabled' : ''}>
+            style="color: ${c.color}; border-color: ${c.color}40;"
+            onclick="deckAddAction('${c.id}')"
+            title="Click to add one back">
             <span>${c.id}</span>
             <span class="count">${remaining}</span>
           </button>
         `;
       }).join('');
 
-      // Modifiers
       const modContainer = document.getElementById('modifierCardsTracker');
       modContainer.innerHTML = CARD_DEFS.modifiers.map(c => {
         const state = deckState.modifiers[c.id];
@@ -961,7 +1169,6 @@
       updateDeckStats();
     }
 
-    // Update deck stats
     function updateDeckStats() {
       let totalCards = 0;
       let totalFlipped = 0;
@@ -974,7 +1181,6 @@
       document.getElementById('totalFlipped').textContent = totalFlipped;
     }
 
-    // Update bust risk for display
     function updateBustRiskDisplay(player) {
       let totalRemaining = 0;
       Object.values(deckState.numbers).forEach(s => totalRemaining += s.total - s.flipped);
@@ -1007,7 +1213,6 @@
       }
     }
 
-    // Player management
     function updateName(playerId, name) {
       const player = players.find(p => p.id === playerId);
       if (player) player.name = (name || `Player ${playerId}`).toUpperCase().slice(0, 12);
@@ -1039,9 +1244,8 @@
       btn.style.opacity = players.length >= 8 ? '0.4' : '1';
     }
 
-    // Game controls
     function newRound() {
-      players.forEach(p => resetPlayerState(p));
+      players.forEach(p => resetPlayerRoundState(p));
       resetDeck();
       addLog('New round started!');
       renderPlayers();
@@ -1054,18 +1258,20 @@
       renderCardTracker();
     }
 
-    function resetGame() {
-      players.forEach(p => {
-        p.totalScore = 0;
-        p.bustCount = 0;
-        resetPlayerState(p);
-      });
-      resetDeck();
-      addLog('Game reset!');
-      renderPlayers();
+    async function resetGame() {
+      const confirmed = await showModal('Reset Game', 'Are you sure you want to reset the entire game? All scores will be lost.', 'danger');
+      if (confirmed) {
+        players.forEach(p => {
+          p.totalScore = 0;
+          p.bustCount = 0;
+          resetPlayerRoundState(p);
+        });
+        resetDeck();
+        addLog('Game reset!');
+        renderPlayers();
+      }
     }
 
-    // Logging
     function addLog(message, type = 'normal') {
       const now = new Date();
       const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -1076,19 +1282,17 @@
       if (type === 'win') color = 'var(--neon-yellow)';
       if (type === 'warning') color = 'var(--neon-orange)';
 
-      gameHistory.unshift({ time, message, color });
-      if (gameHistory.length > MAX_HISTORY) gameHistory.pop();
+      gameHistory.push({ time, message, color });
 
       const logEl = document.getElementById('gameLog');
-      logEl.innerHTML = gameHistory.map(e => `
-        <div class="log-entry">
-          <span class="time">${e.time}</span>
-          <span style="color: ${e.color}">${e.message}</span>
-        </div>
-      `).join('');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="time">${time}</span><span style="color: ${color}">${message}</span>`;
+      logEl.appendChild(entry);
+      
+      logEl.scrollTop = logEl.scrollHeight;
     }
 
-    // Initialize
     initGame();
   </script>
 </body>
