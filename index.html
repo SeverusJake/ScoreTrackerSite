@@ -275,7 +275,7 @@
       border-radius: 12px;
       font-family: 'Orbitron', monospace;
       font-weight: 700;
-      font-size: 1.25rem;
+      font-size: 1.1rem;
       color: var(--text-primary);
       transition: all 0.2s ease;
       position: relative;
@@ -287,6 +287,7 @@
       position: absolute;
       inset: 0;
       background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.03) 50%);
+      pointer-events: none;
     }
 
     .score-btn:active {
@@ -855,7 +856,7 @@
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          ADD
+          PLAYER
         </button>
         <button id="resetAllBtn" class="header-btn reset-all-btn">RESET ALL</button>
       </div>
@@ -1026,7 +1027,7 @@
     let moreWinnerMode = false;
     let minimalMode = false;
     let twoRowsMode = false;
-    let highlightedButtons = new Set();
+    let highlightedButtons = new Set(); // Stores values like 0, 1, "+2", "x2"
     let targetScore = 200;
 
     // Player colors - 20 colors
@@ -1111,16 +1112,30 @@
       return player.score >= highest;
     }
 
-    function calculateFlip7Sum() {
-      let sum = 0;
-      highlightedButtons.forEach(num => {
-        sum += num;
+    function calculateFlip7Details() {
+      let numSum = 0;
+      let plusSum = 0;
+      let hasDouble = false;
+      let numCount = 0;
+
+      highlightedButtons.forEach(val => {
+        if (typeof val === 'number') {
+          numSum += val;
+          numCount++;
+        } else if (val === 'x2') {
+          hasDouble = true;
+        } else if (typeof val === 'string' && val.startsWith('+')) {
+          plusSum += parseInt(val.substring(1), 10);
+        }
       });
-      return sum;
+
+      const total = (numSum * (hasDouble ? 2 : 1)) + plusSum;
+      return { total, numCount };
     }
 
     function hasFlip7Bonus() {
-      return highlightedButtons.size > 6;
+      const { numCount } = calculateFlip7Details();
+      return numCount > 6;
     }
 
     // ============ Player Functions ============
@@ -1240,7 +1255,7 @@
       const player = players.find(p => p.id === selectedPlayerId);
       if (!player || highlightedButtons.size === 0) return;
       
-      const sum = calculateFlip7Sum();
+      const { total: sum } = calculateFlip7Details();
       const bonus = hasFlip7Bonus() ? FLIP7_BONUS : 0;
       const total = sum + bonus;
       
@@ -1442,11 +1457,11 @@
       renderPlayerList();
     }
 
-    function toggleHighlight(number) {
-      if (highlightedButtons.has(number)) {
-        highlightedButtons.delete(number);
+    function toggleHighlight(value) {
+      if (highlightedButtons.has(value)) {
+        highlightedButtons.delete(value);
       } else {
-        highlightedButtons.add(number);
+        highlightedButtons.add(value);
       }
       renderScoreButtons();
       updateModeToggle();
@@ -1473,11 +1488,11 @@
         flip7SumContainerEl.classList.remove('hidden');
         flip7SumContainerEl.classList.add('flex');
         
-        const sum = calculateFlip7Sum();
+        const { total } = calculateFlip7Details();
         const bonus = hasFlip7Bonus() ? FLIP7_BONUS : 0;
-        const total = sum + bonus;
+        const finalTotal = total + bonus;
         
-        flip7SumEl.textContent = total;
+        flip7SumEl.textContent = finalTotal;
         flip7SumEl.classList.toggle('bonus', bonus > 0);
       } else {
         flip7SumContainerEl.classList.add('hidden');
@@ -1492,7 +1507,7 @@
       // Classes for layout modes
       playerListEl.classList.toggle('minimal-mode', minimalMode);
       playerListEl.classList.toggle('two-rows', minimalMode && twoRowsMode);
-      playerListEl.classList.toggle('stretch', minimalMode && players.length > 0 && players.length < 6);
+      playerListEl.classList.toggle('stretch', minimalMode && players.length > 0 && players.length < 7);
       
       const rankings = getPlayerRankings();
       
@@ -1563,24 +1578,46 @@
       let html = '';
       
       if (flip7Mode) {
-        // Flip 7 mode: 0-12 in 4 columns
-        for (let i = 0; i <= 12; i++) {
+        // Flip 7 mode: 0-12 in 5 columns + new buttons
+        // Row 1
+        for (let i = 0; i <= 4; i++) {
           const isHighlighted = highlightedButtons.has(i);
-          html += `
-            <button class="score-btn h-12 ${isHighlighted ? 'highlighted' : ''}" data-points="${i}" aria-label="${isHighlighted ? 'Deselect' : 'Select'} ${i}">
-              <span style="position: relative; z-index: 1;">${i}</span>
-            </button>
-          `;
+          html += `<button class="score-btn h-11 ${isHighlighted ? 'highlighted' : ''}" data-points="${i}" data-type="num">${i}</button>`;
         }
-        // Empty placeholders for 4x4 grid
-        for (let i = 0; i < 3; i++) {
-          html += `<div class="h-12"></div>`;
+        // Row 2
+        for (let i = 5; i <= 9; i++) {
+          const isHighlighted = highlightedButtons.has(i);
+          html += `<button class="score-btn h-11 ${isHighlighted ? 'highlighted' : ''}" data-points="${i}" data-type="num">${i}</button>`;
         }
+        // Row 3
+        for (let i = 10; i <= 12; i++) {
+          const isHighlighted = highlightedButtons.has(i);
+          html += `<button class="score-btn h-11 ${isHighlighted ? 'highlighted' : ''}" data-points="${i}" data-type="num">${i}</button>`;
+        }
+        // +2, +4
+        ['+2', '+4'].forEach(val => {
+          const isHighlighted = highlightedButtons.has(val);
+          html += `<button class="score-btn h-11 ${isHighlighted ? 'highlighted' : ''}" data-points="${val}" data-type="op">${val}</button>`;
+        });
+        
+        // Row 4
+        ['+6', '+8', '+10'].forEach(val => {
+          const isHighlighted = highlightedButtons.has(val);
+          html += `<button class="score-btn h-11 ${isHighlighted ? 'highlighted' : ''}" data-points="${val}" data-type="op">${val}</button>`;
+        });
+        // x2
+        const isX2Highlighted = highlightedButtons.has('x2');
+        html += `<button class="score-btn h-11 ${isX2Highlighted ? 'highlighted' : ''}" data-points="x2" data-type="op">x2</button>`;
+        // Empty placeholder
+        html += `<div class="h-11"></div>`;
+        
+        scoreButtonsEl.className = 'grid grid-cols-5 gap-2';
       } else {
-        // Normal mode: 1-12
+        // Normal mode: 1-12 in 4 columns
+        scoreButtonsEl.className = 'grid grid-cols-4 gap-2';
         for (let i = 1; i <= 12; i++) {
           html += `
-            <button class="score-btn h-14 ${isMinusMode ? 'minus-mode' : ''}" data-points="${i}" aria-label="${isMinusMode ? 'Subtract' : 'Add'} ${i} points">
+            <button class="score-btn h-14 ${isMinusMode ? 'minus-mode' : ''}" data-points="${i}" data-type="num" aria-label="${isMinusMode ? 'Subtract' : 'Add'} ${i} points">
               <span style="position: relative; z-index: 1;">${i}</span>
             </button>
           `;
@@ -1713,10 +1750,17 @@
       scoreButtonsEl.addEventListener('click', (e) => {
         const btn = e.target.closest('.score-btn');
         if (btn) {
-          const points = parseInt(btn.dataset.points, 10);
+          const type = btn.dataset.type;
+          const rawVal = btn.dataset.points;
+          
           if (flip7Mode) {
-            toggleHighlight(points);
+            // In Flip 7 mode, we highlight buttons.
+            // We store numbers as numbers, and ops as strings like "+2", "x2"
+            const val = type === 'num' ? parseInt(rawVal, 10) : rawVal;
+            toggleHighlight(val);
           } else {
+            // Normal mode
+            const points = parseInt(rawVal, 10);
             addScore(points);
           }
         }
