@@ -3,1297 +3,1910 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Flip 7 - Arcade Tracker</title>
+  <title>Neon Score Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a12;
-      --bg-card: #12121a;
-      --bg-dark: #08080c;
-      --border: #2a2a3a;
-      --fg: #e8e8f0;
-      --muted: #5a5a6a;
-      --neon-cyan: #00f5ff;
-      --neon-pink: #ff00aa;
-      --neon-yellow: #f0ff00;
+      --bg-primary: #05050a;
+      --bg-secondary: #0d0d15;
+      --bg-card: #12121c;
+      --neon-cyan: #00f0ff;
+      --neon-magenta: #ff00aa;
       --neon-green: #00ff88;
-      --neon-orange: #ff6b00;
-      --danger: #ff2244;
-      --success: #00ff88;
+      --neon-orange: #ff6600;
+      --neon-purple: #aa00ff;
+      --neon-yellow: #ffee00;
+      --neon-red: #ff0044;
+      --text-primary: #ffffff;
+      --text-muted: #6a6a8a;
+      --border-color: #2a2a3a;
     }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
-      font-family: 'Share Tech Mono', monospace;
-      background: var(--bg);
-      color: var(--fg);
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
       min-height: 100vh;
-      margin: 0;
-      overscroll-behavior: none;
+      min-height: 100dvh;
+      overflow-x: hidden;
     }
 
-    .font-arcade { font-family: 'Orbitron', sans-serif; }
-
-    .scanlines {
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px);
-      pointer-events: none;
-      z-index: 1000;
-      opacity: 0.2;
+    .font-display {
+      font-family: 'Orbitron', monospace;
     }
 
-    .grid-bg {
+    .bg-grid {
       position: fixed;
       inset: 0;
       background-image: 
-        linear-gradient(rgba(0,245,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,245,255,0.02) 1px, transparent 1px);
-      background-size: 30px 30px;
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
       pointer-events: none;
+      z-index: 0;
     }
 
-    .text-glow-cyan { text-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan); }
-    .text-glow-yellow { text-shadow: 0 0 8px var(--neon-yellow), 0 0 16px var(--neon-yellow); }
-
-    /* Modal Styles */
-    .modal-overlay {
+    .bg-glow {
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      opacity: 0;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
       pointer-events: none;
-      transition: opacity 0.2s ease;
+      z-index: 0;
     }
-    .modal-overlay.active { opacity: 1; pointer-events: all; }
 
-    .modal-content {
-      background: var(--bg-card);
-      border: 2px solid var(--neon-cyan);
-      border-radius: 12px;
-      padding: 1.5rem;
-      max-width: 300px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 0 30px rgba(0,245,255,0.2);
-      transform: scale(0.9);
-      transition: transform 0.2s ease;
+    .glow-1 {
+      top: -100px;
+      left: -100px;
+      background: var(--neon-magenta);
+      animation: float 8s ease-in-out infinite;
     }
-    .modal-overlay.active .modal-content { transform: scale(1); }
 
-    .modal-title { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.2rem; margin-bottom: 1rem; color: var(--neon-cyan); }
-    .modal-body { font-size: 0.9rem; margin-bottom: 1.5rem; color: var(--fg); }
-    .modal-input { 
-      width: 100%; 
-      background: var(--bg-dark); 
-      border: 2px solid var(--border); 
-      border-radius: 6px; 
-      padding: 0.5rem; 
-      color: var(--fg); 
-      font-family: 'Share Tech Mono', monospace; 
-      text-align: center;
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
+    .glow-2 {
+      bottom: -100px;
+      right: -100px;
+      background: var(--neon-cyan);
+      animation: float 8s ease-in-out infinite reverse;
     }
-    .modal-input:focus { outline: none; border-color: var(--neon-cyan); }
 
-    .modal-actions { display: flex; gap: 0.5rem; justify-content: center; }
-    .modal-btn {
-      padding: 0.5rem 1.5rem;
-      border-radius: 6px;
-      border: 2px solid var(--border);
-      background: var(--bg-dark);
-      color: var(--fg);
-      font-family: 'Orbitron', sans-serif;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.15s;
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(30px, 30px); }
     }
-    .modal-btn:hover { border-color: var(--fg); }
-    .modal-btn.confirm { border-color: var(--neon-green); color: var(--neon-green); background: rgba(0,255,136,0.1); }
-    .modal-btn.confirm:hover { background: var(--neon-green); color: var(--bg); }
-    .modal-btn.danger { border-color: var(--danger); color: var(--danger); background: rgba(255,34,68,0.1); }
-    .modal-btn.danger:hover { background: var(--danger); color: #fff; }
 
+    .neon-text-cyan {
+      color: var(--neon-cyan);
+      text-shadow: 
+        0 0 5px var(--neon-cyan),
+        0 0 10px var(--neon-cyan),
+        0 0 20px var(--neon-cyan);
+    }
 
+    /* Player List Container */
+    .player-list-container {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scroll-behavior: smooth;
+    }
+
+    .player-list-container.minimal-mode {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+
+    .player-list-container.minimal-mode.stretch {
+      justify-content: stretch;
+    }
+    .player-list-container.minimal-mode.stretch .player-card {
+      flex-grow: 1;
+    }
+
+    .player-list-container.minimal-mode.two-rows {
+      display: grid;
+      grid-template-rows: repeat(2, 1fr);
+      grid-auto-flow: column;
+      grid-auto-columns: min-content;
+      gap: 8px;
+    }
+    
+    .player-list-container.minimal-mode.two-rows.stretch {
+      grid-auto-columns: 1fr;
+    }
+
+    /* Player card */
     .player-card {
-      background: linear-gradient(145deg, var(--bg-card), var(--bg-dark));
-      border: 2px solid var(--border);
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
       border-radius: 12px;
+      padding: 10px 14px;
+      min-width: 90px;
+      transition: all 0.3s ease;
+      cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: all 0.3s ease;
+      flex-shrink: 0;
     }
 
     .player-card::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--player-color);
-      box-shadow: 0 0 15px var(--player-color);
+      inset: 0;
+      background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.02) 50%);
+      pointer-events: none;
     }
 
-    .player-card.leader { border-color: var(--neon-yellow); }
-    .player-card.leader::after {
-      content: 'LEADER';
+    .player-card.selected {
+      border-color: var(--neon-cyan);
+      box-shadow: 
+        0 0 15px var(--neon-cyan),
+        0 0 30px rgba(0, 240, 255, 0.3),
+        inset 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+
+    .player-card:active {
+      transform: scale(0.95);
+    }
+
+    /* Minimal mode card */
+    .player-card.minimal {
+      padding: 6px 10px;
+      min-width: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge {
+      display: none;
       position: absolute;
-      top: 6px; right: 6px;
-      font-family: 'Orbitron', sans-serif;
-      font-size: 0.5rem;
-      font-weight: 700;
-      color: var(--bg);
-      background: var(--neon-yellow);
+      top: -2px;
+      right: -2px;
       padding: 2px 6px;
-      border-radius: 3px;
-      letter-spacing: 0.05em;
-    }
-
-    .player-card.winner {
-      border-color: var(--neon-yellow);
-      animation: winner-pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes winner-pulse {
-      0%, 100% { box-shadow: 0 0 15px rgba(240,255,0,0.3); }
-      50% { box-shadow: 0 0 30px rgba(240,255,0,0.6); }
-    }
-
-    .player-card.busted { animation: shake 0.4s ease; }
-    .player-card.banked { animation: flash 0.3s ease; }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-8px); }
-      75% { transform: translateX(8px); }
-    }
-
-    @keyframes flash {
-      0%, 100% { filter: brightness(1); }
-      50% { filter: brightness(1.4); }
-    }
-
-    .score-total {
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      font-size: 2rem;
-      line-height: 1;
-    }
-
-    .score-running {
-      font-family: 'Orbitron', sans-serif;
+      border-radius: 0 10px 0 8px;
+      font-size: 8px;
       font-weight: 700;
-      font-size: 1.5rem;
-      line-height: 1;
-    }
-
-    /* Buttons */
-    .btn {
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
-      border: 2px solid var(--border);
-      background: var(--bg-dark);
-      color: var(--fg);
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 600;
-      font-size: 0.65rem;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
-      cursor: pointer;
-      transition: all 0.12s ease;
-      display: inline-flex;
+      letter-spacing: 0.5px;
       align-items: center;
-      justify-content: center;
-      gap: 0.25rem;
+      gap: 2px;
     }
 
-    .btn:active:not(:disabled) { transform: scale(0.96); }
-    .btn:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
-    .btn:disabled { opacity: 0.25; cursor: not-allowed; }
+    .player-card.first .badge-first { display: flex; }
+    .player-card.second .badge-second { display: flex; }
+    .player-card.third .badge-third { display: flex; }
+    .player-card.last .badge-last { display: flex; }
+    .player-card.winner .badge-winner { display: flex; }
 
-    .btn-bank {
-      background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,255,136,0.05));
-      border-color: var(--neon-green);
-      color: var(--neon-green);
-    }
-    .btn-bank:not(:disabled):hover, .btn-bank.active {
-      background: var(--neon-green);
-      color: var(--bg);
-      box-shadow: 0 0 15px rgba(0,255,136,0.4);
-    }
-
-    .btn-bust {
-      background: linear-gradient(135deg, rgba(255,34,68,0.15), rgba(255,34,68,0.05));
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-    .btn-bust:not(:disabled):hover {
-      background: var(--danger);
-      color: #fff;
-      box-shadow: 0 0 15px rgba(255,34,68,0.4);
+    /* Minimal badges - colored dots */
+    .player-card.minimal .badge {
+      width: 8px;
+      height: 8px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 0;
+      top: 4px;
+      right: 4px;
+      border-radius: 50%;
     }
 
-    .btn-flip7 {
-      background: var(--bg-dark);
-      border-color: var(--border);
-      color: var(--muted);
-    }
-    .btn-flip7.active {
-      background: var(--neon-yellow) !important;
-      border-color: var(--neon-yellow) !important;
-      color: var(--bg) !important;
-      box-shadow: 0 0 12px rgba(240,255,0,0.4);
+    .player-card.minimal .badge-winner {
+      width: auto;
+      height: auto;
+      padding: 2px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, var(--neon-yellow), var(--neon-orange));
+      animation: winnerGlow 1s ease infinite;
     }
     
-    .btn-reset-p {
-      padding: 0.3rem 0.5rem;
-      font-size: 0.6rem;
-      border-color: var(--danger);
-      color: var(--danger);
+    .player-card.minimal .badge-winner svg {
+        width: 10px;
+        height: 10px;
     }
 
-    /* Number buttons */
-    .num-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 6px;
-      border: 2px solid var(--border);
-      background: var(--bg-dark);
-      color: var(--muted);
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.12s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .badge-first {
+      background: linear-gradient(135deg, #ffd700, #ffaa00);
+      color: var(--bg-primary);
     }
 
-    .num-btn:active { transform: scale(0.92); }
-
-    .num-btn.state-1 {
-      background: linear-gradient(135deg, var(--neon-green), #00cc66);
-      border-color: var(--neon-green);
-      color: var(--bg);
-      box-shadow: 0 0 12px rgba(0,255,136,0.5);
+    .badge-second {
+      background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+      color: var(--bg-primary);
     }
 
-    .num-btn.state-2 {
-      background: linear-gradient(135deg, var(--danger), #cc0033);
-      border-color: var(--danger);
-      color: #fff;
-      box-shadow: 0 0 15px rgba(255,34,68,0.6);
-    }
-    
-    /* State 3: Protected Duplicate (Yellow) */
-    .num-btn.state-3 {
-      background: linear-gradient(135deg, var(--neon-yellow), #ccaa00);
-      border-color: var(--neon-yellow);
-      color: var(--bg);
-      box-shadow: 0 0 15px rgba(240,255,0,0.6);
+    .badge-third {
+      background: linear-gradient(135deg, #cd7f32, #b87333);
+      color: var(--bg-primary);
     }
 
-    /* Action/Modifier buttons */
-    .mod-btn {
-      min-width: 44px;
-      height: 32px;
-      border-radius: 5px;
-      border: 2px solid var(--border);
-      background: var(--bg-dark);
-      color: var(--muted);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.7rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.12s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .badge-last {
+      background: linear-gradient(135deg, #4a90a4, #2a5a6a);
+      color: var(--text-primary);
     }
 
-    .mod-btn:active { transform: scale(0.94); }
-
-    .mod-btn.active {
-      background: var(--btn-color);
-      border-color: var(--btn-color);
-      color: var(--bg);
-      box-shadow: 0 0 10px var(--btn-color);
-    }
-    
-    /* Highlight style for Action Cards */
-    .mod-btn.highlight {
-       border-color: var(--btn-color);
-       color: var(--btn-color);
-       background: rgba(0,0,0,0.3);
-    }
-    
-    .mod-btn.highlight.active {
-      background: var(--btn-color);
-      color: var(--bg);
-      box-shadow: 0 0 10px var(--btn-color);
+    .badge-winner {
+      background: linear-gradient(135deg, var(--neon-yellow), var(--neon-orange));
+      color: var(--bg-primary);
+      animation: winnerGlow 1s ease infinite;
     }
 
-    .input-name {
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid var(--border);
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      font-size: 0.9rem;
-      color: var(--fg);
-      width: 100%;
-      padding: 0.15rem 0;
-      transition: border-color 0.2s;
-      text-transform: uppercase;
-    }
-    .input-name:focus { outline: none; border-bottom-color: var(--player-color); }
-
-    /* Status indicator */
-    .status-indicator {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.6rem;
-      padding: 0.15rem 0.4rem;
-      border-radius: 3px;
-      background: rgba(0,245,255,0.15);
-      color: var(--neon-cyan);
-      border: 1px solid rgba(0,245,255,0.3);
-    }
-    
-    .status-indicator.used {
-      background: rgba(255,34,68,0.15);
-      color: var(--danger);
-      border: 1px solid rgba(255,34,68,0.3);
+    @keyframes winnerGlow {
+      0%, 100% { box-shadow: 0 0 10px var(--neon-yellow); }
+      50% { box-shadow: 0 0 20px var(--neon-orange); }
     }
 
-    .input-small {
-      width: 48px;
-      background: var(--bg-dark);
-      border: 2px solid var(--border);
-      border-radius: 6px;
-      color: var(--fg);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.75rem;
-      text-align: center;
-      padding: 0.25rem;
+    /* Scrollbar */
+    .scroll-container {
+      scrollbar-width: thin;
+      scrollbar-color: var(--neon-cyan) var(--bg-secondary);
     }
-    .input-small:focus { outline: none; border-color: var(--neon-cyan); }
 
-    /* Tracker panel */
-    .tracker-panel {
-      background: linear-gradient(180deg, var(--bg-card), var(--bg-dark));
-      border: 2px solid var(--border);
+    .scroll-container::-webkit-scrollbar {
+      height: 4px;
+      width: 4px;
+    }
+
+    .scroll-container::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+      border-radius: 4px;
+    }
+
+    .scroll-container::-webkit-scrollbar-thumb {
+      background: var(--neon-cyan);
+      border-radius: 4px;
+    }
+
+    /* Score buttons */
+    .score-btn {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
       border-radius: 12px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
       position: relative;
       overflow: hidden;
     }
 
-    .tracker-panel::before {
+    .score-btn::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow));
+      inset: 0;
+      background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.03) 50%);
     }
 
-    .tracker-card {
-      width: 36px; 
-      height: 40px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: var(--bg-dark);
-      color: var(--fg);
-      font-family: 'Orbitron', sans-serif;
-      font-size: 0.7rem;
+    .score-btn:active {
+      transform: scale(0.9);
+    }
+
+    .score-btn:hover {
+      border-color: var(--neon-magenta);
+      box-shadow: 0 0 15px rgba(255, 0, 170, 0.4);
+    }
+
+    .score-btn.minus-mode {
+      border-color: var(--neon-red);
+      box-shadow: 0 0 10px rgba(255, 0, 68, 0.3);
+    }
+
+    .score-btn.highlighted {
+      background: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px rgba(0, 240, 255, 0.4);
+    }
+
+    .score-btn.highlighted::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 12px;
+      background: transparent;
+      border: 2px solid var(--neon-cyan);
+      animation: pulseHighlight 1s ease infinite;
+    }
+
+    @keyframes pulseHighlight {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.05); }
+    }
+
+    /* Mode toggle */
+    .mode-toggle {
+      background: var(--bg-card);
+      border: 2px solid var(--neon-green);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-family: 'Orbitron', monospace;
       font-weight: 700;
-      cursor: pointer;
-      transition: all 0.1s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
+      font-size: 0.875rem;
+      color: var(--neon-green);
+      transition: all 0.3s ease;
     }
 
-    .tracker-card .count {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.55rem;
-      color: var(--muted);
+    .mode-toggle:hover {
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
     }
 
-    .tracker-card.depleted { opacity: 0.3; cursor: not-allowed; }
+    .mode-toggle.active {
+      background: var(--neon-red);
+      border-color: var(--neon-red);
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px rgba(255, 0, 68, 0.5);
+    }
 
-    .stat-box {
-      background: var(--bg-dark);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.4rem;
+    /* Flip 7 Add button */
+    .flip7-add-btn {
+      background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+      border: none;
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: 0.875rem;
+      color: var(--bg-primary);
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+    }
+
+    .flip7-add-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+    }
+
+    .flip7-add-btn:active {
+      transform: scale(0.98);
+    }
+
+    .flip7-add-btn.bonus {
+      background: linear-gradient(135deg, var(--neon-yellow), var(--neon-orange));
+      box-shadow: 0 0 25px rgba(255, 238, 0, 0.5);
+      animation: bonusPulse 0.5s ease infinite;
+    }
+
+    @keyframes bonusPulse {
+      0%, 100% { box-shadow: 0 0 25px rgba(255, 238, 0, 0.5); }
+      50% { box-shadow: 0 0 40px rgba(255, 238, 0, 0.8); }
+    }
+
+    /* Flip 7 sum display */
+    .flip7-sum {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 1.25rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      min-width: 60px;
       text-align: center;
     }
 
-    .stat-box .label { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; }
-    .stat-box .value { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1rem; }
+    .flip7-sum.bonus {
+      color: var(--neon-yellow);
+      border-color: var(--neon-yellow);
+      box-shadow: 0 0 10px rgba(255, 238, 0, 0.3);
+    }
 
-    .remove-btn {
-      position: absolute;
-      top: 4px; left: 4px;
-      width: 18px; height: 18px;
-      border-radius: 3px;
-      border: none;
+    /* Config button */
+    .config-btn {
       background: transparent;
-      color: var(--muted);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .config-btn:hover {
+      border-color: var(--neon-purple);
+      box-shadow: 0 0 15px rgba(170, 0, 255, 0.4);
+    }
+
+    .config-btn svg {
+      transition: transform 0.5s ease;
+    }
+
+    .config-btn:hover svg {
+      transform: rotate(90deg);
+    }
+
+    /* Target score */
+    .target-score {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75rem;
       cursor: pointer;
-      opacity: 0;
-      transition: all 0.15s ease;
+      transition: all 0.3s ease;
+    }
+
+    .target-score:hover {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+    }
+
+    .target-score-value {
+      color: var(--neon-yellow);
+      font-weight: 700;
+    }
+
+    /* Switch toggle */
+    .switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      background: var(--bg-secondary);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .switch.active {
+      background: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px var(--neon-cyan);
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: var(--text-primary);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .switch.active::after {
+      left: 26px;
+      background: var(--bg-primary);
+    }
+
+    /* History log */
+    .history-item {
+      background: var(--bg-card);
+      border-left: 3px solid var(--neon-cyan);
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .history-score {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+    }
+
+    .history-bonus {
+      color: var(--neon-yellow);
+      font-weight: 700;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      z-index: 100;
       display: flex;
       align-items: center;
       justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
     }
-    .player-card:hover .remove-btn { opacity: 1; }
-    .remove-btn:hover { background: var(--danger); color: #fff; }
 
-    .game-log {
-      background: var(--bg-dark);
-      border: 1px solid var(--border);
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 2px solid var(--neon-magenta);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 320px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 
+        0 0 30px rgba(255, 0, 170, 0.4),
+        inset 0 0 30px rgba(255, 0, 170, 0.05);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-content.config-modal {
+      border-color: var(--neon-purple);
+      box-shadow: 
+        0 0 30px rgba(170, 0, 255, 0.4),
+        inset 0 0 30px rgba(170, 0, 255, 0.05);
+      text-align: left;
+    }
+
+    /* Icon buttons */
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
       border-radius: 6px;
-      padding: 0.5rem 0.6rem;
-      font-size: 0.6rem;
-      height: 150px;
-      overflow-y: scroll;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      padding: 0;
+    }
+
+    .icon-btn:hover {
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+      border-color: var(--neon-cyan);
+    }
+
+    .icon-btn.remove-btn {
+      border-color: var(--neon-red);
+      color: var(--neon-red);
+    }
+
+    .icon-btn.remove-btn:hover {
+      background: var(--neon-red);
+      color: var(--bg-primary);
+      box-shadow: 0 0 15px rgba(255, 0, 68, 0.5);
+    }
+
+    .icon-btn.reset-btn {
+      border-color: var(--neon-orange);
+      color: var(--neon-orange);
+    }
+
+    .icon-btn.reset-btn:hover {
+      background: var(--neon-orange);
+      color: var(--bg-primary);
+      box-shadow: 0 0 15px rgba(255, 102, 0, 0.5);
+    }
+
+    /* Header buttons */
+    .header-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 0.625rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .header-btn.add-btn {
+      color: var(--neon-green);
+      border-color: var(--neon-green);
+    }
+
+    .header-btn.add-btn:hover {
+      background: var(--neon-green);
+      color: var(--bg-primary);
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+    }
+
+    .header-btn.reset-all-btn {
+      border-color: var(--neon-red);
+      color: var(--neon-red);
+    }
+
+    .header-btn.reset-all-btn:hover {
+      background: var(--neon-red);
+      color: var(--bg-primary);
+      box-shadow: 0 0 15px rgba(255, 0, 68, 0.5);
+    }
+
+    /* Score display animation */
+    .score-animate {
+      animation: scorePop 0.3s ease;
+    }
+
+    @keyframes scorePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    /* Player colors - 20 colors */
+    .player-color-0 { --player-color: #00f0ff; }
+    .player-color-1 { --player-color: #ff00aa; }
+    .player-color-2 { --player-color: #00ff88; }
+    .player-color-3 { --player-color: #ff6600; }
+    .player-color-4 { --player-color: #aa00ff; }
+    .player-color-5 { --player-color: #ffee00; }
+    .player-color-6 { --player-color: #ff0044; }
+    .player-color-7 { --player-color: #00ffcc; }
+    .player-color-8 { --player-color: #ff8800; }
+    .player-color-9 { --player-color: #00ccff; }
+    .player-color-10 { --player-color: #ff0066; }
+    .player-color-11 { --player-color: #88ff00; }
+    .player-color-12 { --player-color: #cc00ff; }
+    .player-color-13 { --player-color: #ffcc00; }
+    .player-color-14 { --player-color: #00ff44; }
+    .player-color-15 { --player-color: #ff4400; }
+    .player-color-16 { --player-color: #4400ff; }
+    .player-color-17 { --player-color: #ff00cc; }
+    .player-color-18 { --player-color: #00ffaa; }
+    .player-color-19 { --player-color: #ffaa00; }
+
+    .player-card .player-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--player-color);
+      box-shadow: 0 0 8px var(--player-color);
+      flex-shrink: 0;
+    }
+
+    .player-card.selected .player-indicator {
+      animation: pulse 1s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* Minimal mode indicator */
+    .player-card.minimal .player-indicator {
+      width: 10px;
+      height: 10px;
+    }
+
+    /* Name edit input */
+    .name-input {
+      background: var(--bg-primary);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: 'Orbitron', monospace;
+      font-size: 1rem;
+      padding: 4px 8px;
+      width: 100%;
+      max-width: 150px;
+      outline: none;
+    }
+
+    .name-input:focus {
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    /* Number input - no spinners */
+    .number-input {
+      background: var(--bg-primary);
+      border: 2px solid var(--neon-yellow);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: 'Orbitron', monospace;
+      font-size: 1.25rem;
+      padding: 8px 12px;
+      width: 100%;
+      max-width: 120px;
+      outline: none;
+      text-align: center;
+    }
+
+    .number-input:focus {
+      box-shadow: 0 0 10px var(--neon-yellow);
+    }
+
+    /* Hide number input spinners */
+    .number-input::-webkit-outer-spin-button,
+    .number-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .number-input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    /* Config settings list */
+    .config-list {
       display: flex;
       flex-direction: column;
+      gap: 12px;
     }
 
-    .log-entry { padding: 0.15rem 0; border-bottom: 1px solid var(--border); }
-    .log-entry:last-child { border-bottom: none; }
-    .log-entry .time { color: var(--muted); margin-right: 0.5rem; }
-
-    .card-enter { opacity: 0; transform: translateY(15px) scale(0.97); }
-    .card-enter.visible {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    .config-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
     }
 
+    .config-item.hidden {
+      display: none;
+    }
+
+    .config-label {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* Color Picker */
+    .color-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .color-option {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+
+    .color-option.selected {
+      border-color: var(--text-primary);
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .color-option.used {
+      opacity: 0.3;
+    }
+    
+    .color-option.used::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+      border-radius: 6px;
+    }
+
+    /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
       }
-      .scanlines { display: none; }
     }
-
-    @media (max-width: 640px) {
-      .num-btn { width: 32px; height: 32px; font-size: 0.75rem; }
-      .tracker-card { width: 30px; height: 36px; font-size: 0.6rem; }
-      .score-total { font-size: 1.75rem; }
-      .score-running { font-size: 1.25rem; }
-    }
-
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   </style>
 </head>
-<body>
-  <div class="scanlines"></div>
-  <div class="grid-bg"></div>
+<body class="relative">
+  <!-- Background effects -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
 
-  <!-- Custom Modal -->
-  <div id="customModal" class="modal-overlay">
+  <!-- Main container -->
+  <div class="relative z-10 min-h-screen flex flex-col p-4 pb-6 max-w-lg mx-auto">
+    
+    <!-- Header -->
+    <header class="mb-4">
+      <div class="flex items-center justify-between mb-2">
+        <h1 class="font-display text-xl font-bold neon-text-cyan tracking-wider">SCORE TRACKER</h1>
+        <div class="flex items-center gap-2">
+          <div id="targetScore" class="target-score" role="button" tabindex="0" aria-label="Click to change target score">
+            <span style="color: var(--text-muted);">Target:</span>
+            <span id="targetScoreValue" class="target-score-value">200</span>
+          </div>
+          <button id="configBtn" class="config-btn" aria-label="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="flex justify-end items-center gap-2">
+        <button id="addPlayerBtn" class="header-btn add-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          ADD
+        </button>
+        <button id="resetAllBtn" class="header-btn reset-all-btn">RESET ALL</button>
+      </div>
+    </header>
+
+    <!-- Player List -->
+    <section class="mb-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs uppercase tracking-wider" style="color: var(--text-muted);">Players</span>
+        <span id="playerCount" class="text-xs font-display" style="color: var(--neon-cyan);">0/20</span>
+      </div>
+      <div id="playerList" class="player-list-container scroll-container -mx-1 px-1">
+        <!-- Players will be rendered here -->
+      </div>
+    </section>
+
+    <!-- Selected Player Panel -->
+    <section id="selectedPanel" class="mb-4 hidden">
+      <div class="p-4 rounded-xl" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <div id="selectedIndicator" class="w-3 h-3 rounded-full cursor-pointer" title="Click to change color"></div>
+            <span id="selectedName" class="font-display text-lg font-bold cursor-pointer hover:opacity-80 transition-opacity" title="Click to edit name"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="removePlayerBtn" class="icon-btn remove-btn" aria-label="Remove player">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <button id="resetPlayerBtn" class="icon-btn reset-btn" aria-label="Reset score">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-xs uppercase" style="color: var(--text-muted);">Score</span>
+          <span id="selectedScore" class="font-display text-4xl font-black">0</span>
+          <span id="targetIndicator" class="text-xs ml-auto" style="color: var(--text-muted);"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Score Buttons -->
+    <section class="mb-4">
+      <div id="scoreButtonHeader" class="flex items-center justify-between mb-2">
+        <span class="text-xs uppercase tracking-wider" style="color: var(--text-muted);">Points</span>
+        <div id="flip7SumContainer" class="hidden items-center gap-2">
+          <span class="text-xs" style="color: var(--text-muted);">Sum:</span>
+          <span id="flip7Sum" class="flip7-sum">0</span>
+        </div>
+        <button id="modeToggle" class="mode-toggle flex items-center gap-2">
+          <span id="modeIcon">+</span>
+          <span class="text-xs">MODE</span>
+        </button>
+      </div>
+      <div id="scoreButtons" class="grid grid-cols-4 gap-2">
+        <!-- Buttons will be rendered here -->
+      </div>
+    </section>
+
+    <!-- History Log -->
+    <section class="flex-1 flex flex-col min-h-0">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs uppercase tracking-wider" style="color: var(--text-muted);">History</span>
+        <button id="clearHistoryBtn" class="text-xs px-2 py-1 rounded" style="color: var(--text-muted); background: var(--bg-card);">Clear</button>
+      </div>
+      <div id="historyLog" class="scroll-container flex-1 overflow-y-auto space-y-2 pr-1" style="max-height: 200px;">
+        <div class="text-center py-8" style="color: var(--text-muted);">
+          <span class="text-sm">No history yet</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-content">
-      <div class="modal-title" id="modalTitle">Confirm</div>
-      <div class="modal-body" id="modalBody">Are you sure?</div>
-      <input type="number" id="modalInput" class="modal-input" style="display:none;">
-      <div class="modal-actions">
-        <button class="modal-btn" id="modalCancelBtn" onclick="closeModal(false)">Cancel</button>
-        <button class="modal-btn confirm" id="modalConfirmBtn" onclick="closeModal(true)">Confirm</button>
+      <h2 id="modalTitle" class="font-display text-lg font-bold mb-2" style="color: var(--neon-magenta); text-shadow: 0 0 10px var(--neon-magenta);">Confirm Reset</h2>
+      <p id="modalMessage" class="text-sm mb-6" style="color: var(--text-muted);">Are you sure you want to reset?</p>
+      <div class="flex gap-3 justify-center">
+        <button id="modalCancel" class="px-6 py-2 rounded-lg font-display font-bold" style="background: var(--bg-card); border: 1px solid var(--border-color);">Cancel</button>
+        <button id="modalConfirm" class="px-6 py-2 rounded-lg font-display font-bold" style="background: var(--neon-red); color: var(--bg-primary);">Confirm</button>
       </div>
     </div>
   </div>
 
-  <div class="relative z-10 min-h-screen px-2 py-3 md:px-6 md:py-5">
-    <header class="max-w-7xl mx-auto mb-3 md:mb-4">
-      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-        <div>
-          <h1 class="font-arcade text-2xl md:text-3xl font-black text-glow-cyan" style="color: var(--neon-cyan);">FLIP 7</h1>
-          <p class="text-[var(--muted)] text-xs tracking-widest uppercase">Arcade Tracker</p>
+  <!-- Config Modal -->
+  <div id="configModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
+    <div class="modal-content config-modal">
+      <h2 id="configModalTitle" class="font-display text-lg font-bold mb-4 text-center" style="color: var(--neon-purple); text-shadow: 0 0 10px var(--neon-purple);">Settings</h2>
+      <div class="config-list">
+        <div class="config-item">
+          <span class="config-label">Flip 7 Mode</span>
+          <div id="flip7Switch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
         </div>
-        
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2 py-1.5 cursor-pointer hover:border-[var(--neon-cyan)] transition-colors" onclick="changeTargetPrompt()">
-            <label class="text-[var(--muted)] text-xs uppercase cursor-pointer">Target:</label>
-            <span id="targetScoreDisplay" class="font-arcade text-xs text-[var(--neon-cyan)]">200</span>
-          </div>
-          
-          <button class="btn" onclick="newRound()">Round</button>
-          <button class="btn" onclick="resetGame()" style="border-color: var(--danger); color: var(--danger);">Reset</button>
+        <div class="config-item">
+          <span class="config-label">More Winners</span>
+          <div id="moreWinnerSwitch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
         </div>
-      </div>
-    </header>
-
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3 md:gap-4">
-      
-      <div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3" id="playersGrid"></div>
-        
-        <div class="mt-2 flex justify-center">
-          <button id="addPlayerBtn" class="btn" onclick="addPlayer()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add
-          </button>
+        <div class="config-item">
+          <span class="config-label">Minimal List</span>
+          <div id="minimalSwitch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+        <div id="twoRowsConfig" class="config-item hidden">
+          <span class="config-label">Two Rows</span>
+          <div id="twoRowsSwitch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
         </div>
       </div>
+      <button id="configClose" class="w-full mt-4 px-6 py-2 rounded-lg font-display font-bold" style="background: var(--bg-card); border: 1px solid var(--border-color);">Close</button>
+    </div>
+  </div>
 
-      <div class="tracker-panel p-2.5 md:p-3">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="font-arcade text-xs font-bold text-glow-pink" style="color: var(--neon-pink);">DECK</h2>
-          <button class="btn text-xs py-1 px-2" onclick="resetDeck()">Reset</button>
-        </div>
-
-        <div class="mb-2">
-          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Numbers</div>
-          <div class="flex flex-wrap gap-0.5" id="numberCardsTracker"></div>
-        </div>
-
-        <div class="mb-2">
-          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Actions (Click to +1)</div>
-          <div class="flex flex-wrap gap-1" id="actionCardsTracker"></div>
-        </div>
-
-        <div class="mb-3">
-          <div class="text-[var(--muted)] text-xs uppercase tracking-wider mb-1">Modifiers</div>
-          <div class="flex flex-wrap gap-0.5" id="modifierCardsTracker"></div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-1.5 mb-2">
-          <div class="stat-box">
-            <div class="label">Deck</div>
-            <div class="value text-glow-cyan" style="color: var(--neon-cyan);" id="deckRemaining">94</div>
-          </div>
-          <div class="stat-box">
-            <div class="label">Flipped</div>
-            <div class="value" style="color: var(--neon-yellow);" id="totalFlipped">0</div>
-          </div>
-          <div class="stat-box">
-            <div class="label">Bust%</div>
-            <div class="value" id="bustRiskDisplay">0%</div>
-          </div>
-        </div>
+  <!-- Target Score Modal -->
+  <div id="targetModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="targetModalTitle">
+    <div class="modal-content">
+      <h2 id="targetModalTitle" class="font-display text-lg font-bold mb-4" style="color: var(--neon-yellow); text-shadow: 0 0 10px var(--neon-yellow);">Target Score</h2>
+      <div class="flex justify-center mb-4">
+        <input type="number" id="targetInput" class="number-input" min="1" max="9999" placeholder="200">
+      </div>
+      <div class="flex gap-3 justify-center">
+        <button id="targetModalCancel" class="px-6 py-2 rounded-lg font-display font-bold" style="background: var(--bg-card); border: 1px solid var(--border-color);">Cancel</button>
+        <button id="targetModalConfirm" class="px-6 py-2 rounded-lg font-display font-bold" style="background: var(--neon-yellow); color: var(--bg-primary);">Save</button>
       </div>
     </div>
+  </div>
 
-    <div class="max-w-7xl mx-auto mt-3">
-      <div class="game-log" id="gameLog">
-        <div class="log-entry"><span class="time">--:--</span><span style="color: var(--neon-cyan);">System initialized. Ready player one!</span></div>
+  <!-- Name Edit Modal -->
+  <div id="nameModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="nameModalTitle">
+    <div class="modal-content">
+      <h2 id="nameModalTitle" class="font-display text-lg font-bold mb-4" style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan);">Edit Name</h2>
+      <input type="text" id="nameInput" class="name-input mb-4 text-center" maxlength="12" placeholder="Enter name">
+      <div class="flex gap-3 justify-center">
+        <button id="nameModalCancel" class="px-6 py-2 rounded-lg font-display font-bold" style="background: var(--bg-card); border: 1px solid var(--border-color);">Cancel</button>
+        <button id="nameModalConfirm" class="px-6 py-2 rounded-lg font-display font-bold" style="background: var(--neon-green); color: var(--bg-primary);">Save</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Color Picker Modal -->
+  <div id="colorModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="colorModalTitle">
+    <div class="modal-content">
+      <h2 id="colorModalTitle" class="font-display text-lg font-bold mb-2" style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan);">Choose Color</h2>
+      <p class="text-xs mb-4" style="color: var(--text-muted);">Select a color for this player</p>
+      <div id="colorPickerGrid" class="color-picker-grid">
+        <!-- Colors will be rendered here -->
+      </div>
+      <button id="colorModalClose" class="w-full mt-4 px-6 py-2 rounded-lg font-display font-bold" style="background: var(--bg-card); border: 1px solid var(--border-color);">Cancel</button>
     </div>
   </div>
 
   <script>
-    const CARD_DEFS = {
-      numbers: [
-        { value: 0, copies: 1 }, { value: 1, copies: 1 }, { value: 2, copies: 2 },
-        { value: 3, copies: 3 }, { value: 4, copies: 4 }, { value: 5, copies: 5 },
-        { value: 6, copies: 6 }, { value: 7, copies: 7 }, { value: 8, copies: 8 },
-        { value: 9, copies: 9 }, { value: 10, copies: 10 }, { value: 11, copies: 11 },
-        { value: 12, copies: 12 }
-      ],
-      actions: [
-        { id: 'FRZ', name: 'Freeze', copies: 3, color: '#00f5ff' },
-        { id: 'F3', name: 'Flip 3', copies: 3, color: '#ff00aa' },
-        { id: '2ND', name: 'Second Chance', copies: 3, color: '#00ff88' }
-      ],
-      modifiers: [
-        { id: '+2', name: '+2', copies: 1, color: '#f0ff00', bonus: 2 },
-        { id: '+4', name: '+4', copies: 1, color: '#ff8800', bonus: 4 },
-        { id: '+6', name: '+6', copies: 1, color: '#ff4488', bonus: 6 },
-        { id: '+8', name: '+8', copies: 1, color: '#ff00aa', bonus: 8 },
-        { id: '+10', name: '+10', copies: 1, color: '#aa00ff', bonus: 10 },
-        { id: 'x2', name: 'x2', copies: 1, color: '#00ff00', multiplier: true }
-      ]
-    };
-
-    const PLAYER_COLORS = ['#00f5ff', '#ff00aa', '#f0ff00', '#00ff88', '#ff6b00', '#aa00ff', '#ff4488', '#00ffaa'];
-
-    let players = [];
-    let nextPlayerId = 1;
-    let deckState = { numbers: {}, actions: {}, modifiers: {} };
-    let gameHistory = [];
-    let targetScore = 200;
+    // ============ State ============
+    const MAX_PLAYERS = 20;
+    const MAX_HISTORY = 30;
+    const FLIP7_BONUS = 15;
     
-    // Modal state
-    let modalResolver = null;
+    let players = [];
+    let selectedPlayerId = null;
+    let history = [];
+    let modalCallback = null;
+    let isMinusMode = false;
+    let flip7Mode = false;
+    let moreWinnerMode = false;
+    let minimalMode = false;
+    let twoRowsMode = false;
+    let highlightedButtons = new Set();
+    let targetScore = 200;
 
-    function initGame() {
-      players = [
-        createPlayer('Player 1'),
-        createPlayer('Player 2')
-      ];
-      initDeck();
-      renderPlayers();
-      renderCardTracker();
-      updateAddButton();
+    // Player colors - 20 colors
+    const playerColors = [
+      '#00f0ff', '#ff00aa', '#00ff88', '#ff6600', '#aa00ff',
+      '#ffee00', '#ff0044', '#00ffcc', '#ff8800', '#00ccff',
+      '#ff0066', '#88ff00', '#cc00ff', '#ffcc00', '#00ff44',
+      '#ff4400', '#4400ff', '#ff00cc', '#00ffaa', '#ffaa00'
+    ];
+
+    // ============ DOM Elements ============
+    const playerListEl = document.getElementById('playerList');
+    const playerCountEl = document.getElementById('playerCount');
+    const selectedPanelEl = document.getElementById('selectedPanel');
+    const selectedNameEl = document.getElementById('selectedName');
+    const selectedScoreEl = document.getElementById('selectedScore');
+    const selectedIndicatorEl = document.getElementById('selectedIndicator');
+    const targetIndicatorEl = document.getElementById('targetIndicator');
+    const scoreButtonsEl = document.getElementById('scoreButtons');
+    const historyLogEl = document.getElementById('historyLog');
+    const modalEl = document.getElementById('modal');
+    const modalTitleEl = document.getElementById('modalTitle');
+    const modalMessageEl = document.getElementById('modalMessage');
+    const configModalEl = document.getElementById('configModal');
+    const nameModalEl = document.getElementById('nameModal');
+    const nameInputEl = document.getElementById('nameInput');
+    const modeToggleEl = document.getElementById('modeToggle');
+    const modeIconEl = document.getElementById('modeIcon');
+    const flip7SwitchEl = document.getElementById('flip7Switch');
+    const moreWinnerSwitchEl = document.getElementById('moreWinnerSwitch');
+    const minimalSwitchEl = document.getElementById('minimalSwitch');
+    const twoRowsSwitchEl = document.getElementById('twoRowsSwitch');
+    const twoRowsConfigEl = document.getElementById('twoRowsConfig');
+    const flip7SumContainerEl = document.getElementById('flip7SumContainer');
+    const flip7SumEl = document.getElementById('flip7Sum');
+    const targetScoreEl = document.getElementById('targetScore');
+    const targetScoreValueEl = document.getElementById('targetScoreValue');
+    const targetModalEl = document.getElementById('targetModal');
+    const targetInputEl = document.getElementById('targetInput');
+    const addPlayerBtnEl = document.getElementById('addPlayerBtn');
+    const colorModalEl = document.getElementById('colorModal');
+    const colorPickerGridEl = document.getElementById('colorPickerGrid');
+
+    // ============ Initialize ============
+    function init() {
+      renderScoreButtons();
+      renderPlayerList();
+      renderColorPicker();
+      bindEvents();
+      
+      // Add one player by default
+      if (players.length === 0) {
+        addPlayer();
+      }
     }
 
-    function createPlayer(name) {
+    // ============ Helper Functions ============
+    function getPlayerRankings() {
+      const withScore = players.filter(p => p.score > 0);
+      const sorted = [...withScore].sort((a, b) => b.score - a.score);
+      
       return {
-        id: nextPlayerId++,
-        name: name,
-        totalScore: 0,
-        bustCount: 0,
-        color: PLAYER_COLORS[(nextPlayerId - 2) % PLAYER_COLORS.length],
-        numberStates: Array(13).fill(0), // 0:Off, 1:On, 2:Red, 3:Yellow
-        modifierStates: {},
-        secondChanceActive: false, // Has card available to use
-        usedSecondChanceCount: 0, // Display counter
-        flip7Bonus: 0
+        first: sorted[0] || null,
+        second: sorted[1] || null,
+        third: sorted[2] || null,
+        last: sorted.length > 2 ? sorted[sorted.length - 1] : null
       };
     }
-    
-    // --- Modal Logic ---
-    function showModal(title, body, type = 'confirm', defaultValue = '') {
-      return new Promise((resolve) => {
-        modalResolver = resolve;
-        document.getElementById('modalTitle').innerText = title;
-        document.getElementById('modalBody').innerText = body;
-        
-        const inputEl = document.getElementById('modalInput');
-        const confirmBtn = document.getElementById('modalConfirmBtn');
-        
-        if (type === 'input') {
-          inputEl.style.display = 'block';
-          inputEl.value = defaultValue;
-          confirmBtn.className = 'modal-btn confirm';
-        } else {
-          inputEl.style.display = 'none';
-          if (type === 'danger') {
-             confirmBtn.className = 'modal-btn danger';
-          } else {
-             confirmBtn.className = 'modal-btn confirm';
-          }
-        }
-        
-        document.getElementById('customModal').classList.add('active');
-        if (type === 'input') inputEl.focus();
-      });
+
+    function getHighestScore() {
+      if (players.length === 0) return 0;
+      return Math.max(...players.map(p => p.score));
     }
 
-    async function closeModal(confirmed) {
-      document.getElementById('customModal').classList.remove('active');
-      if (modalResolver) {
-        if (confirmed && document.getElementById('modalInput').style.display === 'block') {
-           const val = document.getElementById('modalInput').value;
-           modalResolver(val);
-        } else {
-           modalResolver(confirmed);
-        }
-        modalResolver = null;
-      }
-    }
-
-    function initDeck() {
-      deckState = { numbers: {}, actions: {}, modifiers: {} };
+    function isWinner(player) {
+      if (targetScore <= 0 || player.score < targetScore) return false;
       
-      CARD_DEFS.numbers.forEach(c => {
-        deckState.numbers[c.value] = { total: c.copies, flipped: 0 };
-      });
-      CARD_DEFS.actions.forEach(c => {
-        deckState.actions[c.id] = { total: c.copies, flipped: 0, name: c.name, color: c.color };
-      });
-      CARD_DEFS.modifiers.forEach(c => {
-        deckState.modifiers[c.id] = { total: c.copies, flipped: 0, name: c.name, color: c.color };
-      });
+      if (moreWinnerMode) return true;
+      
+      // Default mode: Must be the highest score AND reach target
+      const highest = getHighestScore();
+      return player.score >= highest;
     }
 
-    function calcRunningTotal(player) {
+    function calculateFlip7Sum() {
       let sum = 0;
-      for (let i = 0; i <= 12; i++) {
-        if (player.numberStates[i] >= 1) { // 1, 2, 3 all count as having the number
-          sum += i;
-        }
-      }
-      if (player.modifierStates['x2']) {
-        sum *= 2;
-      }
-      CARD_DEFS.modifiers.forEach(m => {
-        if (m.bonus && player.modifierStates[m.id]) {
-          sum += m.bonus;
-        }
+      highlightedButtons.forEach(num => {
+        sum += num;
       });
-      sum += player.flip7Bonus;
       return sum;
     }
 
-    function countUniqueNumbers(player) {
-      return player.numberStates.filter(s => s >= 1).length;
+    function hasFlip7Bonus() {
+      return highlightedButtons.size > 6;
     }
 
-    function countRedButtons(player) {
-      return player.numberStates.filter(s => s === 2).length;
-    }
-
-    // Check if bust conditions are met (Red buttons exist without protection)
-    function shouldEnableBust(player) {
-      return countRedButtons(player) > 0;
-    }
-
-    function hasAnyButtonActive(player) {
-      if (player.numberStates.some(s => s > 0)) return true;
-      if (Object.values(player.modifierStates).some(v => v)) return true;
-      if (player.secondChanceActive) return true;
-      return false;
-    }
-
-    // Updated Flip 7 Check: Must have 7 unique numbers AND no red cards
-    function checkFlip7(player) {
-      if (countRedButtons(player) > 0) return false;
-      return countUniqueNumbers(player) >= 7;
-    }
-    
-    // Helper to update Flip 7 status
-    function updateFlip7Status(player) {
-      const wasFlip7 = player.flip7Bonus > 0;
-      const nowFlip7 = checkFlip7(player);
-      
-      if (!wasFlip7 && nowFlip7) {
-        player.flip7Bonus = 15;
-        addLog(`${player.name} FLIP 7 BONUS!`, 'success');
-      } else if (wasFlip7 && !nowFlip7) {
-        player.flip7Bonus = 0;
-        // Only log loss if they actually had the bonus
-        if (wasFlip7) addLog(`${player.name} lost Flip 7 bonus`, 'warning');
-      }
-    }
-
-    function renderPlayers() {
-      const grid = document.getElementById('playersGrid');
-      grid.innerHTML = '';
-
-      const highest = Math.max(...players.map(p => p.totalScore), 0);
-      const leaders = players.filter(p => p.totalScore === highest && p.totalScore > 0);
-      const winners = players.filter(p => p.totalScore >= targetScore);
-
-      players.forEach((player, idx) => {
-        const isLeader = leaders.length >= 1 && leaders.includes(player) && highest > 0;
-        const isWinner = winners.length === 1 && winners[0].id === player.id;
-        const canRemove = players.length > 2;
-        const runningTotal = calcRunningTotal(player);
-        const flip7Eligible = checkFlip7(player);
-        const isBustSituation = shouldEnableBust(player);
-        const bankEnabled = hasAnyButtonActive(player) && !isBustSituation;
-        const bustEnabled = isBustSituation;
-
-        const card = document.createElement('div');
-        card.className = `player-card card-enter p-2.5 md:p-3 ${isWinner ? 'winner' : ''} ${isLeader && !isWinner ? 'leader' : ''}`;
-        card.style.setProperty('--player-color', player.color);
-        card.style.transitionDelay = `${idx * 30}ms`;
-        card.id = `player-${player.id}`;
-
-        // Generate Status Indicators
-        let statusHtml = '';
-        // Display Used SC tags
-        for(let k=0; k<player.usedSecondChanceCount; k++) {
-           statusHtml += '<span class="status-indicator used">USED 2ND CHANCE</span>';
-        }
-        // Display Available SC tag
-        if(player.secondChanceActive) {
-           statusHtml += '<span class="status-indicator">2ND CHANCE ON</span>';
-        }
-        
-        if(player.flip7Bonus > 0) {
-           statusHtml += '<span class="status-indicator" style="background: rgba(240,255,0,0.15); color: var(--neon-yellow); border-color: rgba(240,255,0,0.3);">FLIP 7 BONUS</span>';
-        }
-
-        card.innerHTML = `
-          ${canRemove ? `
-            <button class="remove-btn" onclick="removePlayer(${player.id})">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          ` : ''}
-          
-          <div class="flex items-center justify-between">
-            <input type="text" class="input-name" value="${player.name}" 
-              onchange="updateName(${player.id}, this.value)">
-            <button class="btn btn-reset-p" onclick="resetPlayerScore(${player.id})">RST</button>
-          </div>
-          
-          <div class="flex items-end justify-between gap-2 mt-1.5 mb-1">
-            <div>
-              <div class="text-[var(--muted)] text-xs uppercase">Total</div>
-              <div class="score-total text-glow-yellow" style="color: var(--neon-yellow);">${player.totalScore}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-[var(--muted)] text-xs uppercase">Running</div>
-              <div class="score-running text-glow-cyan" style="color: var(--neon-cyan);">${runningTotal}</div>
-            </div>
-          </div>
-          
-          <!-- Status Indicators -->
-          <div class="flex flex-wrap gap-1 mb-1.5 min-h-[20px] items-center">
-            ${statusHtml}
-          </div>
-          
-          <!-- Number Buttons -->
-          <div class="flex flex-wrap gap-0.5 mb-1.5">
-            ${CARD_DEFS.numbers.map(n => `
-              <button class="num-btn state-${player.numberStates[n.value]}"
-                onclick="clickNumber(${player.id}, ${n.value})">${n.value}</button>
-            `).join('')}
-          </div>
-          
-          <!-- Actions Row -->
-          <div class="flex flex-wrap gap-1 mb-1.5">
-             ${CARD_DEFS.actions.map(a => `
-              <button class="mod-btn highlight ${player.secondChanceActive && a.id === '2ND' ? 'active' : ''}" 
-                style="--btn-color: ${a.color}"
-                onclick="clickAction(${player.id}, '${a.id}')">${a.id}</button>
-            `).join('')}
-            <button class="btn btn-flip7 ${flip7Eligible ? 'active' : ''}" disabled style="opacity: 1; margin-left: auto;">
-              FLIP7
-            </button>
-          </div>
-          
-          <!-- Modifier Buttons -->
-          <div class="flex flex-wrap gap-0.5 mb-2">
-            ${CARD_DEFS.modifiers.map(m => `
-              <button class="mod-btn ${player.modifierStates[m.id] ? 'active' : ''}" 
-                style="--btn-color: ${m.color}"
-                onclick="clickModifier(${player.id}, '${m.id}')">${m.id}</button>
-            `).join('')}
-          </div>
-          
-          <!-- Action Buttons -->
-          <div class="grid grid-cols-2 gap-1.5">
-            <button class="btn btn-bank ${bankEnabled ? 'active' : ''}" 
-              onclick="bankPoints(${player.id})"
-              ${!bankEnabled ? 'disabled' : ''}>Bank</button>
-            <button class="btn btn-bust" 
-              onclick="bust(${player.id})"
-              ${!bustEnabled ? 'disabled' : ''}>Bust</button>
-          </div>
-          
-          <!-- Stats -->
-          <div class="mt-1.5 flex justify-center gap-3 text-xs text-[var(--muted)]">
-            <span>Busts: <span style="color: var(--danger);">${player.bustCount}</span></span>
-          </div>
-        `;
-
-        grid.appendChild(card);
-      });
-
-      requestAnimationFrame(() => {
-        document.querySelectorAll('.card-enter').forEach(c => c.classList.add('visible'));
-      });
-    }
-
-    function clickNumber(playerId, num) {
-      const player = players.find(p => p.id === playerId);
-      if (!player) return;
-
-      const currentState = player.numberStates[num];
-      
-      // Cycle Logic
-      if (currentState === 0) {
-        // Gray -> Green
-        player.numberStates[num] = 1;
-        deckFlipNumber(num, 1);
-        addLog(`${player.name} flipped ${num}`);
-      } else if (currentState === 1) {
-        // Green -> Duplicate
-        if (player.secondChanceActive) {
-          // Auto-protect
-          player.numberStates[num] = 3; // Yellow
-          player.secondChanceActive = false;
-          player.usedSecondChanceCount++;
-          deckFlipNumber(num, 1);
-          addLog(`${player.name} used Second Chance on ${num}!`, 'success');
-        } else {
-          // Unprotected Red
-          player.numberStates[num] = 2; // Red
-          deckFlipNumber(num, 1);
-          addLog(`${player.name} drew duplicate ${num}!`, 'danger');
-        }
-      } else if (currentState === 2) {
-        // Red -> Gray (Return both cards)
-        player.numberStates[num] = 0;
-        deckFlipNumber(num, -2);
-        addLog(`${player.name} returned ${num} copies to deck`);
-      } else if (currentState === 3) {
-        // Yellow -> Gray (Un-use SC)
-        player.numberStates[num] = 0;
-        deckFlipNumber(num, -2);
-        // Recover the SC card usage
-        if (player.usedSecondChanceCount > 0) {
-            player.usedSecondChanceCount--;
-            player.secondChanceActive = true; // Return to hand
-            addLog(`${player.name} reversed SC usage on ${num}`);
-        }
-      }
-
-      updateFlip7Status(player);
-
-      renderPlayers();
-      updateBustRiskDisplay(player);
-    }
-
-    function clickModifier(playerId, modId) {
-      const player = players.find(p => p.id === playerId);
-      if (!player) return;
-      
-      if (player.modifierStates[modId]) {
-        delete player.modifierStates[modId];
-        deckFlipModifier(modId, -1);
-        addLog(`${player.name} returned ${modId}`);
-      } else {
-        player.modifierStates[modId] = true;
-        deckFlipModifier(modId, 1);
-        addLog(`${player.name} flipped ${modId}`);
-      }
-      
-      renderPlayers();
-      updateBustRiskDisplay(player);
-    }
-
-    // Logic for Action Buttons
-    function clickAction(playerId, actionId) {
-      const player = players.find(p => p.id === playerId);
-      if (!player) return;
-
-      const actionDef = CARD_DEFS.actions.find(a => a.id === actionId);
-
-      if (actionId === '2ND') {
-        if (player.secondChanceActive) {
-          // Toggle OFF (Return to deck)
-          player.secondChanceActive = false;
-          deckFlipAction('2ND', -1);
-          addLog(`${player.name} returned Second Chance`);
-        } else {
-          // Toggle ON (Pick up from deck)
-          // Rule: "If number button is red and press second chance, the first red number button will change to yellow"
-          const redIndex = player.numberStates.findIndex(s => s === 2);
-          if (redIndex !== -1) {
-            // Immediate usage
-            player.numberStates[redIndex] = 3; // Yellow
-            player.usedSecondChanceCount++;
-            deckFlipAction('2ND', 1); // Take from deck
-            addLog(`${player.name} used SC on duplicate ${redIndex}!`, 'success');
-          } else {
-            // Just hold it
-            player.secondChanceActive = true;
-            deckFlipAction('2ND', 1);
-            addLog(`${player.name} has Second Chance`, 'success');
-          }
-        }
-      } else {
-        // FRZ and F3 Logic
-        deckFlipAction(actionId, 1); 
-        addLog(`${player.name} used ${actionDef.name}`);
-        
-        const btn = document.querySelector(`#player-${playerId} .mod-btn[onclick*="'${actionId}'"]`);
-        if(btn) {
-          btn.classList.add('active');
-          setTimeout(() => btn.classList.remove('active'), 300);
-        }
-      }
-
-      // Check Flip 7 status changes (e.g. fixing a red card might restore Flip 7)
-      updateFlip7Status(player);
-
-      renderPlayers();
-      renderCardTracker();
-      updateBustRiskDisplay(player);
-    }
-
-    function deckFlipNumber(num, delta) {
-      const state = deckState.numbers[num];
-      if (state) {
-        state.flipped = Math.max(0, Math.min(state.total, state.flipped + delta));
-      }
-      renderCardTracker();
-    }
-
-    function deckFlipAction(actionId, delta) {
-      const state = deckState.actions[actionId];
-      if (state) {
-        state.flipped = Math.max(0, Math.min(state.total, state.flipped + delta));
-      }
-      renderCardTracker();
-    }
-
-    function deckFlipModifier(modId, delta) {
-      const state = deckState.modifiers[modId];
-      if (state) {
-        state.flipped = Math.max(0, Math.min(state.total, state.flipped + delta));
-      }
-      renderCardTracker();
-    }
-
-    function deckAddAction(actionId) {
-       const state = deckState.actions[actionId];
-       if (state && state.flipped > 0) {
-         state.flipped -= 1;
-         addLog(`Deck: Added ${actionId} back`);
-         renderCardTracker();
-         if(players.length > 0) updateBustRiskDisplay(players[0]);
-       }
-    }
-    
-    async function changeTargetPrompt() {
-      const val = await showModal('Target Score', 'Enter new target score:', 'input', targetScore);
-      if (val !== null && !isNaN(val) && val > 0) {
-        targetScore = parseInt(val);
-        document.getElementById('targetScoreDisplay').innerText = targetScore;
-        addLog(`Target score set to ${targetScore}`);
-        renderPlayers();
-      }
-    }
-
-    function bankPoints(playerId) {
-      const player = players.find(p => p.id === playerId);
-      if (!player || !hasAnyButtonActive(player)) return;
-
-      const runningTotal = calcRunningTotal(player);
-      player.totalScore += runningTotal;
-
-      addLog(`${player.name} BANKED ${runningTotal}!`, 'success');
-
-      if (player.totalScore >= targetScore) {
-        addLog(`${player.name} WINS with ${player.totalScore}!`, 'win');
-      }
-
-      resetPlayerRoundState(player);
-      renderPlayers();
-
-      const card = document.getElementById(`player-${playerId}`);
-      if (card) {
-        card.classList.add('banked');
-        setTimeout(() => card.classList.remove('banked'), 300);
-      }
-    }
-
-    function bust(playerId) {
-      const player = players.find(p => p.id === playerId);
-      if (!player || !shouldEnableBust(player)) return;
-
-      player.bustCount++;
-      addLog(`${player.name} BUSTED!`, 'danger');
-
-      resetPlayerRoundState(player);
-      renderPlayers();
-
-      const card = document.getElementById(`player-${playerId}`);
-      if (card) {
-        card.classList.add('busted');
-        setTimeout(() => card.classList.remove('busted'), 400);
-      }
-    }
-
-    function resetPlayerRoundState(player) {
-      player.numberStates = Array(13).fill(0);
-      player.modifierStates = {};
-      player.secondChanceActive = false;
-      player.usedSecondChanceCount = 0;
-      player.flip7Bonus = 0;
-    }
-
-    async function resetPlayerScore(playerId) {
-      const confirmed = await showModal('Reset Player', 'Reset score to 0 and clear hand?', 'danger');
-      if (confirmed) {
-        const player = players.find(p => p.id === playerId);
-        if(player) {
-          player.totalScore = 0;
-          player.bustCount = 0;
-          resetPlayerRoundState(player);
-          addLog(`${player.name} score reset.`);
-          renderPlayers();
-        }
-      }
-    }
-
-    function renderCardTracker() {
-      const numContainer = document.getElementById('numberCardsTracker');
-      numContainer.innerHTML = CARD_DEFS.numbers.map(c => {
-        const state = deckState.numbers[c.value];
-        const remaining = state.total - state.flipped;
-        const depleted = remaining === 0;
-        return `
-          <button class="tracker-card ${depleted ? 'depleted' : ''}" ${depleted ? 'disabled' : ''}>
-            <span>${c.value}</span>
-            <span class="count">${remaining}</span>
-          </button>
-        `;
-      }).join('');
-
-      const actContainer = document.getElementById('actionCardsTracker');
-      actContainer.innerHTML = CARD_DEFS.actions.map(c => {
-        const state = deckState.actions[c.id];
-        const remaining = state.total - state.flipped;
-        const depleted = remaining === 0;
-        return `
-          <button class="tracker-card ${depleted ? 'depleted' : ''}" 
-            style="color: ${c.color}; border-color: ${c.color}40;"
-            onclick="deckAddAction('${c.id}')"
-            title="Click to add one back">
-            <span>${c.id}</span>
-            <span class="count">${remaining}</span>
-          </button>
-        `;
-      }).join('');
-
-      const modContainer = document.getElementById('modifierCardsTracker');
-      modContainer.innerHTML = CARD_DEFS.modifiers.map(c => {
-        const state = deckState.modifiers[c.id];
-        const remaining = state.total - state.flipped;
-        const depleted = remaining === 0;
-        return `
-          <button class="tracker-card ${depleted ? 'depleted' : ''}"
-            style="color: ${c.color}; border-color: ${c.color}40;" ${depleted ? 'disabled' : ''}>
-            <span>${c.id}</span>
-            <span class="count">${remaining}</span>
-          </button>
-        `;
-      }).join('');
-
-      updateDeckStats();
-    }
-
-    function updateDeckStats() {
-      let totalCards = 0;
-      let totalFlipped = 0;
-
-      Object.values(deckState.numbers).forEach(s => { totalCards += s.total; totalFlipped += s.flipped; });
-      Object.values(deckState.actions).forEach(s => { totalCards += s.total; totalFlipped += s.flipped; });
-      Object.values(deckState.modifiers).forEach(s => { totalCards += s.total; totalFlipped += s.flipped; });
-
-      document.getElementById('deckRemaining').textContent = totalCards - totalFlipped;
-      document.getElementById('totalFlipped').textContent = totalFlipped;
-    }
-
-    function updateBustRiskDisplay(player) {
-      let totalRemaining = 0;
-      Object.values(deckState.numbers).forEach(s => totalRemaining += s.total - s.flipped);
-      Object.values(deckState.actions).forEach(s => totalRemaining += s.total - s.flipped);
-      Object.values(deckState.modifiers).forEach(s => totalRemaining += s.total - s.flipped);
-
-      let bustCards = 0;
-      for (let i = 0; i <= 12; i++) {
-        if (player.numberStates[i] >= 1) {
-          const state = deckState.numbers[i];
-          if (state) {
-            bustCards += state.total - state.flipped;
-          }
-        }
-      }
-
-      const risk = totalRemaining > 0 ? Math.round((bustCards / totalRemaining) * 100) : 0;
-      const riskEl = document.getElementById('bustRiskDisplay');
-      riskEl.textContent = `${risk}%`;
-      
-      riskEl.className = 'value';
-      if (risk === 0) {
-        riskEl.style.color = 'var(--neon-green)';
-      } else if (risk <= 25) {
-        riskEl.style.color = 'var(--neon-yellow)';
-      } else if (risk <= 50) {
-        riskEl.style.color = 'var(--neon-orange)';
-      } else {
-        riskEl.style.color = 'var(--danger)';
-      }
-    }
-
-    function updateName(playerId, name) {
-      const player = players.find(p => p.id === playerId);
-      if (player) player.name = (name || `Player ${playerId}`).toUpperCase().slice(0, 12);
+    // ============ Player Functions ============
+    function generatePlayerId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
     function addPlayer() {
-      if (players.length >= 8) return;
-      const np = createPlayer(`P${players.length + 1}`);
-      players.push(np);
-      addLog(`${np.name} joined!`);
-      renderPlayers();
-      updateAddButton();
+      if (players.length >= MAX_PLAYERS) return;
+      
+      const newPlayer = {
+        id: generatePlayerId(),
+        name: `Player ${players.length + 1}`,
+        score: 0,
+        colorIndex: players.length
+      };
+      
+      players.push(newPlayer);
+      selectPlayer(newPlayer.id);
+      renderPlayerList();
+      addHistory(`Added ${newPlayer.name}`, 'add');
     }
 
     function removePlayer(playerId) {
-      if (players.length <= 2) return;
       const player = players.find(p => p.id === playerId);
-      if (player) {
-        addLog(`${player.name} left.`);
+      if (!player || players.length <= 1) return;
+      
+      const doRemove = () => {
         players = players.filter(p => p.id !== playerId);
-        renderPlayers();
-        updateAddButton();
-      }
-    }
-
-    function updateAddButton() {
-      const btn = document.getElementById('addPlayerBtn');
-      btn.disabled = players.length >= 8;
-      btn.style.opacity = players.length >= 8 ? '0.4' : '1';
-    }
-
-    function newRound() {
-      players.forEach(p => resetPlayerRoundState(p));
-      resetDeck();
-      addLog('New round started!');
-      renderPlayers();
-    }
-
-    function resetDeck() {
-      Object.values(deckState.numbers).forEach(s => s.flipped = 0);
-      Object.values(deckState.actions).forEach(s => s.flipped = 0);
-      Object.values(deckState.modifiers).forEach(s => s.flipped = 0);
-      renderCardTracker();
-    }
-
-    async function resetGame() {
-      const confirmed = await showModal('Reset Game', 'Are you sure you want to reset the entire game? All scores will be lost.', 'danger');
-      if (confirmed) {
-        players.forEach(p => {
-          p.totalScore = 0;
-          p.bustCount = 0;
-          resetPlayerRoundState(p);
+        
+        // Reassign color indices
+        players.forEach((p, i) => {
+          p.colorIndex = i;
         });
-        resetDeck();
-        addLog('Game reset!');
-        renderPlayers();
+        
+        if (selectedPlayerId === playerId) {
+          // Select the last player instead of first
+          selectedPlayerId = players[players.length - 1]?.id || null;
+        }
+        
+        renderPlayerList();
+        updateSelectedPanel();
+        addHistory(`Removed ${player.name}`, 'remove');
+      };
+      
+      if (player.score > 0) {
+        showModal('Remove Player', `Remove ${player.name} with score ${player.score}?`, doRemove);
+      } else {
+        doRemove();
       }
     }
 
-    function addLog(message, type = 'normal') {
-      const now = new Date();
-      const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      
-      let color = 'var(--fg)';
-      if (type === 'danger') color = 'var(--danger)';
-      if (type === 'success') color = 'var(--neon-green)';
-      if (type === 'win') color = 'var(--neon-yellow)';
-      if (type === 'warning') color = 'var(--neon-orange)';
-
-      gameHistory.push({ time, message, color });
-
-      const logEl = document.getElementById('gameLog');
-      const entry = document.createElement('div');
-      entry.className = 'log-entry';
-      entry.innerHTML = `<span class="time">${time}</span><span style="color: ${color}">${message}</span>`;
-      logEl.appendChild(entry);
-      
-      logEl.scrollTop = logEl.scrollHeight;
+    function selectPlayer(playerId) {
+      selectedPlayerId = playerId;
+      renderPlayerList();
+      updateSelectedPanel();
     }
 
-    initGame();
+    function updateSelectedPanel() {
+      const player = players.find(p => p.id === selectedPlayerId);
+      
+      if (!player) {
+        selectedPanelEl.classList.add('hidden');
+        return;
+      }
+      
+      selectedPanelEl.classList.remove('hidden');
+      selectedNameEl.textContent = player.name;
+      selectedScoreEl.textContent = player.score;
+      selectedScoreEl.style.color = playerColors[player.colorIndex];
+      selectedScoreEl.style.textShadow = `0 0 10px ${playerColors[player.colorIndex]}, 0 0 20px ${playerColors[player.colorIndex]}`;
+      selectedIndicatorEl.style.background = playerColors[player.colorIndex];
+      selectedIndicatorEl.style.boxShadow = `0 0 10px ${playerColors[player.colorIndex]}`;
+      
+      // Update target indicator
+      if (targetScore > 0 && player.score > 0) {
+        const remaining = targetScore - player.score;
+        if (remaining > 0) {
+          targetIndicatorEl.textContent = `${remaining} to target`;
+          targetIndicatorEl.style.color = 'var(--text-muted)';
+        } else if (remaining === 0) {
+          targetIndicatorEl.textContent = 'Target reached!';
+          targetIndicatorEl.style.color = 'var(--neon-green)';
+        } else {
+          targetIndicatorEl.textContent = `${Math.abs(remaining)} over target`;
+          targetIndicatorEl.style.color = 'var(--neon-yellow)';
+        }
+      } else {
+        targetIndicatorEl.textContent = '';
+      }
+    }
+
+    function addScore(points) {
+      const player = players.find(p => p.id === selectedPlayerId);
+      if (!player) return;
+      
+      const actualPoints = isMinusMode ? -points : points;
+      const newScore = Math.max(0, player.score + actualPoints);
+      const actualChange = newScore - player.score;
+      
+      if (actualChange === 0) return;
+      
+      player.score = newScore;
+      updateSelectedPanel();
+      renderPlayerList();
+      
+      // Animate score
+      selectedScoreEl.classList.remove('score-animate');
+      void selectedScoreEl.offsetWidth;
+      selectedScoreEl.classList.add('score-animate');
+      
+      const sign = actualChange >= 0 ? '+' : '';
+      addHistory(`${player.name}: ${player.score} (${sign}${actualChange})`, 'score', player.colorIndex);
+    }
+
+    function executeFlip7Add() {
+      const player = players.find(p => p.id === selectedPlayerId);
+      if (!player || highlightedButtons.size === 0) return;
+      
+      const sum = calculateFlip7Sum();
+      const bonus = hasFlip7Bonus() ? FLIP7_BONUS : 0;
+      const total = sum + bonus;
+      
+      player.score += total;
+      updateSelectedPanel();
+      renderPlayerList();
+      
+      // Animate score
+      selectedScoreEl.classList.remove('score-animate');
+      void selectedScoreEl.offsetWidth;
+      selectedScoreEl.classList.add('score-animate');
+      
+      // Add two history entries if bonus
+      if (bonus > 0) {
+        addHistory(`${player.name} got Flip 7, +${bonus} points`, 'flip7', player.colorIndex);
+        addHistory(`${player.name}: ${player.score} (+${total})`, 'score-bonus', player.colorIndex);
+      } else {
+        addHistory(`${player.name}: ${player.score} (+${total})`, 'score', player.colorIndex);
+      }
+      
+      // Clear highlights
+      highlightedButtons.clear();
+      renderScoreButtons();
+      updateModeToggle();
+      updateFlip7Sum();
+    }
+
+    function resetPlayerScore(playerId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+      
+      showModal('Reset Score', `Reset ${player.name}'s score to 0?`, () => {
+        player.score = 0;
+        updateSelectedPanel();
+        renderPlayerList();
+        addHistory(`Reset ${player.name}'s score`, 'reset');
+      });
+    }
+
+    function resetAllScores() {
+      const hasScores = players.some(p => p.score > 0);
+      if (!hasScores) return;
+      
+      showModal('Reset All', 'Reset all player scores to 0?', () => {
+        players.forEach(p => p.score = 0);
+        updateSelectedPanel();
+        renderPlayerList();
+        addHistory('Reset all scores', 'reset');
+      });
+    }
+
+    function editPlayerName(playerId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+      
+      nameInputEl.value = player.name;
+      nameModalEl.classList.add('active');
+      nameInputEl.focus();
+      nameInputEl.select();
+      
+      const handleConfirm = () => {
+        const newName = nameInputEl.value.trim() || `Player ${player.colorIndex + 1}`;
+        player.name = newName.substring(0, 12);
+        updateSelectedPanel();
+        renderPlayerList();
+        addHistory(`Renamed to ${player.name}`, 'add');
+        cleanup();
+      };
+      
+      const cleanup = () => {
+        nameModalEl.classList.remove('active');
+        document.getElementById('nameModalConfirm').removeEventListener('click', handleConfirm);
+        document.getElementById('nameModalCancel').removeEventListener('click', cleanup);
+      };
+      
+      document.getElementById('nameModalConfirm').addEventListener('click', handleConfirm);
+      document.getElementById('nameModalCancel').addEventListener('click', cleanup);
+    }
+
+    function editPlayerColor(playerId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+
+      // Calculate used colors by other players
+      const usedColors = new Set(
+        players
+          .filter(p => p.id !== playerId)
+          .map(p => p.colorIndex)
+      );
+
+      // Update color picker
+      document.querySelectorAll('.color-option').forEach((el, index) => {
+        el.classList.toggle('selected', index === player.colorIndex);
+        el.classList.toggle('used', usedColors.has(index));
+      });
+      
+      colorModalEl.classList.add('active');
+      
+      const handleColorSelect = (e) => {
+        const colorOption = e.target.closest('.color-option');
+        if (colorOption) {
+          const newColorIndex = parseInt(colorOption.dataset.colorIndex, 10);
+          player.colorIndex = newColorIndex;
+          updateSelectedPanel();
+          renderPlayerList();
+          closeModal();
+        }
+      };
+
+      const closeModal = () => {
+        colorModalEl.classList.remove('active');
+        colorPickerGridEl.removeEventListener('click', handleColorSelect);
+        document.getElementById('colorModalClose').removeEventListener('click', closeModal);
+      };
+      
+      colorPickerGridEl.addEventListener('click', handleColorSelect);
+      document.getElementById('colorModalClose').addEventListener('click', closeModal);
+    }
+
+    function editTargetScore() {
+      targetInputEl.value = targetScore;
+      targetModalEl.classList.add('active');
+      targetInputEl.focus();
+      targetInputEl.select();
+      
+      const handleConfirm = () => {
+        const newTarget = parseInt(targetInputEl.value, 10);
+        if (!isNaN(newTarget) && newTarget > 0 && newTarget <= 9999) {
+          targetScore = newTarget;
+          targetScoreValueEl.textContent = targetScore;
+          updateSelectedPanel();
+          renderPlayerList();
+        }
+        cleanup();
+      };
+      
+      const cleanup = () => {
+        targetModalEl.classList.remove('active');
+        document.getElementById('targetModalConfirm').removeEventListener('click', handleConfirm);
+        document.getElementById('targetModalCancel').removeEventListener('click', cleanup);
+      };
+      
+      document.getElementById('targetModalConfirm').addEventListener('click', handleConfirm);
+      document.getElementById('targetModalCancel').addEventListener('click', cleanup);
+    }
+
+    function toggleMode() {
+      isMinusMode = !isMinusMode;
+      modeIconEl.textContent = isMinusMode ? '-' : '+';
+      modeToggleEl.classList.toggle('active', isMinusMode);
+      
+      // Update score buttons appearance
+      document.querySelectorAll('.score-btn').forEach(btn => {
+        btn.classList.toggle('minus-mode', isMinusMode);
+      });
+    }
+
+    function toggleFlip7Mode() {
+      flip7Mode = !flip7Mode;
+      flip7SwitchEl.classList.toggle('active', flip7Mode);
+      flip7SwitchEl.setAttribute('aria-checked', flip7Mode.toString());
+      
+      // Clear highlights when switching modes
+      highlightedButtons.clear();
+      isMinusMode = false;
+      
+      renderScoreButtons();
+      updateModeToggle();
+      updateFlip7Sum();
+    }
+
+    function toggleMoreWinnerMode() {
+      moreWinnerMode = !moreWinnerMode;
+      moreWinnerSwitchEl.classList.toggle('active', moreWinnerMode);
+      moreWinnerSwitchEl.setAttribute('aria-checked', moreWinnerMode.toString());
+      renderPlayerList();
+    }
+
+    function toggleMinimalMode() {
+      minimalMode = !minimalMode;
+      minimalSwitchEl.classList.toggle('active', minimalMode);
+      minimalSwitchEl.setAttribute('aria-checked', minimalMode.toString());
+      
+      // Show/hide Two Rows option
+      twoRowsConfigEl.classList.toggle('hidden', !minimalMode);
+      
+      // If turning off minimal, also turn off two rows
+      if (!minimalMode && twoRowsMode) {
+        toggleTwoRowsMode();
+      }
+      
+      renderPlayerList();
+    }
+
+    function toggleTwoRowsMode() {
+      twoRowsMode = !twoRowsMode;
+      twoRowsSwitchEl.classList.toggle('active', twoRowsMode);
+      twoRowsSwitchEl.setAttribute('aria-checked', twoRowsMode.toString());
+      renderPlayerList();
+    }
+
+    function toggleHighlight(number) {
+      if (highlightedButtons.has(number)) {
+        highlightedButtons.delete(number);
+      } else {
+        highlightedButtons.add(number);
+      }
+      renderScoreButtons();
+      updateModeToggle();
+      updateFlip7Sum();
+    }
+
+    function updateModeToggle() {
+      if (flip7Mode) {
+        const bonus = hasFlip7Bonus() ? FLIP7_BONUS : 0;
+        
+        modeToggleEl.className = 'flip7-add-btn' + (bonus > 0 ? ' bonus' : '');
+        modeToggleEl.innerHTML = '<span>ADD</span>';
+      } else {
+        modeToggleEl.className = 'mode-toggle flex items-center gap-2';
+        modeToggleEl.innerHTML = `<span id="modeIcon">${isMinusMode ? '-' : '+'}</span><span class="text-xs">MODE</span>`;
+        if (isMinusMode) {
+          modeToggleEl.classList.add('active');
+        }
+      }
+    }
+
+    function updateFlip7Sum() {
+      if (flip7Mode) {
+        flip7SumContainerEl.classList.remove('hidden');
+        flip7SumContainerEl.classList.add('flex');
+        
+        const sum = calculateFlip7Sum();
+        const bonus = hasFlip7Bonus() ? FLIP7_BONUS : 0;
+        const total = sum + bonus;
+        
+        flip7SumEl.textContent = total;
+        flip7SumEl.classList.toggle('bonus', bonus > 0);
+      } else {
+        flip7SumContainerEl.classList.add('hidden');
+        flip7SumContainerEl.classList.remove('flex');
+      }
+    }
+
+    // ============ Render Functions ============
+    function renderPlayerList() {
+      playerCountEl.textContent = `${players.length}/${MAX_PLAYERS}`;
+      
+      // Classes for layout modes
+      playerListEl.classList.toggle('minimal-mode', minimalMode);
+      playerListEl.classList.toggle('two-rows', minimalMode && twoRowsMode);
+      playerListEl.classList.toggle('stretch', minimalMode && players.length > 0 && players.length < 6);
+      
+      const rankings = getPlayerRankings();
+      
+      let html = '';
+      
+      // Player cards
+      players.forEach((player) => {
+        const isSelected = player.id === selectedPlayerId;
+        const playerIsWinner = isWinner(player);
+        const isFirst = !playerIsWinner && rankings.first && player.id === rankings.first.id;
+        const isSecond = !playerIsWinner && rankings.second && player.id === rankings.second.id;
+        const isThird = !playerIsWinner && rankings.third && player.id === rankings.third.id;
+        const isLast = !playerIsWinner && rankings.last && player.id === rankings.last.id;
+        const color = playerColors[player.colorIndex];
+        
+        if (minimalMode) {
+          // Minimal card layout
+          html += `
+            <div class="player-card player-color-${player.colorIndex} minimal ${isSelected ? 'selected' : ''} ${playerIsWinner ? 'winner' : ''} ${isFirst ? 'first' : ''} ${isSecond ? 'second' : ''} ${isThird ? 'third' : ''} ${isLast ? 'last' : ''}"
+                 data-player-id="${player.id}"
+                 role="button"
+                 tabindex="0">
+              <div class="player-indicator"></div>
+              <div class="font-display text-base font-black" style="color: ${color}; text-shadow: 0 0 6px ${color};">${player.score}</div>
+              <div class="badge badge-winner">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+                </svg>
+              </div>
+              <div class="badge badge-first"></div>
+              <div class="badge badge-second"></div>
+              <div class="badge badge-third"></div>
+              <div class="badge badge-last"></div>
+            </div>
+          `;
+        } else {
+          // Standard card layout
+          html += `
+            <div class="player-card player-color-${player.colorIndex} ${isSelected ? 'selected' : ''} ${playerIsWinner ? 'winner' : ''} ${isFirst ? 'first' : ''} ${isSecond ? 'second' : ''} ${isThird ? 'third' : ''} ${isLast ? 'last' : ''} flex-shrink-0"
+                 data-player-id="${player.id}"
+                 role="button"
+                 tabindex="0"
+                 aria-label="${player.name}, score ${player.score}${isSelected ? ', selected' : ''}${playerIsWinner ? ', winner' : ''}${isFirst ? ', first place' : ''}${isSecond ? ', second place' : ''}${isThird ? ', third place' : ''}${isLast ? ', last place' : ''}">
+              <div class="badge badge-winner">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+                </svg>
+                Winner
+              </div>
+              <div class="badge badge-first">1st</div>
+              <div class="badge badge-second">2nd</div>
+              <div class="badge badge-third">3rd</div>
+              <div class="badge badge-last">Last</div>
+              <div class="flex items-center gap-2 mb-1">
+                <div class="player-indicator"></div>
+                <span class="text-xs font-medium truncate max-w-14">${player.name}</span>
+              </div>
+              <div class="font-display text-xl font-black" style="color: ${color}; text-shadow: 0 0 8px ${color};">${player.score}</div>
+            </div>
+          `;
+        }
+      });
+      
+      playerListEl.innerHTML = html;
+    }
+
+    function renderScoreButtons() {
+      let html = '';
+      
+      if (flip7Mode) {
+        // Flip 7 mode: 0-12 in 4 columns
+        for (let i = 0; i <= 12; i++) {
+          const isHighlighted = highlightedButtons.has(i);
+          html += `
+            <button class="score-btn h-12 ${isHighlighted ? 'highlighted' : ''}" data-points="${i}" aria-label="${isHighlighted ? 'Deselect' : 'Select'} ${i}">
+              <span style="position: relative; z-index: 1;">${i}</span>
+            </button>
+          `;
+        }
+        // Empty placeholders for 4x4 grid
+        for (let i = 0; i < 3; i++) {
+          html += `<div class="h-12"></div>`;
+        }
+      } else {
+        // Normal mode: 1-12
+        for (let i = 1; i <= 12; i++) {
+          html += `
+            <button class="score-btn h-14 ${isMinusMode ? 'minus-mode' : ''}" data-points="${i}" aria-label="${isMinusMode ? 'Subtract' : 'Add'} ${i} points">
+              <span style="position: relative; z-index: 1;">${i}</span>
+            </button>
+          `;
+        }
+      }
+      
+      scoreButtonsEl.innerHTML = html;
+    }
+
+    function renderColorPicker() {
+      let html = '';
+      playerColors.forEach((color, index) => {
+        html += `
+          <div class="color-option" data-color-index="${index}" style="background: ${color}; box-shadow: 0 0 8px ${color};" tabindex="0" role="button" aria-label="Color ${index + 1}"></div>
+        `;
+      });
+      colorPickerGridEl.innerHTML = html;
+    }
+
+    function addHistory(message, type, colorIndex = 0) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      
+      history.unshift({ message, type, time: timeStr, colorIndex });
+      
+      if (history.length > MAX_HISTORY) {
+        history.pop();
+      }
+      
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (history.length === 0) {
+        historyLogEl.innerHTML = `
+          <div class="text-center py-8" style="color: var(--text-muted);">
+            <span class="text-sm">No history yet</span>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '';
+      history.forEach((item, index) => {
+        let borderColor = playerColors[item.colorIndex] || 'var(--neon-cyan)';
+        if (item.type === 'reset') borderColor = 'var(--neon-orange)';
+        if (item.type === 'remove') borderColor = 'var(--neon-red)';
+        if (item.type === 'add' && !item.message.includes('Renamed')) borderColor = 'var(--neon-green)';
+        if (item.type === 'flip7') borderColor = 'var(--neon-yellow)';
+        if (item.type === 'score-bonus') borderColor = 'var(--neon-yellow)';
+        
+        // Parse and highlight score
+        let displayMessage = item.message;
+        
+        // Flip 7 bonus message
+        if (item.type === 'flip7') {
+          displayMessage = `<span class="history-bonus">${item.message}</span>`;
+        }
+        // Score message with bonus highlight
+        else if (item.type === 'score-bonus') {
+          const match = item.message.match(/^(.+): (\d+) \((.+)\)$/);
+          if (match) {
+            const name = match[1];
+            const score = match[2];
+            const change = match[3];
+            const scoreColor = playerColors[item.colorIndex] || 'var(--neon-cyan)';
+            displayMessage = `${name}: <span class="history-score" style="color: ${scoreColor}; text-shadow: 0 0 6px ${scoreColor};">${score}</span> (<span class="history-bonus">${change}</span>)`;
+          }
+        }
+        // Normal score message
+        else {
+          const match = item.message.match(/^(.+): (\d+) \((.+)\)$/);
+          if (match) {
+            const name = match[1];
+            const score = match[2];
+            const change = match[3];
+            const scoreColor = playerColors[item.colorIndex] || 'var(--neon-cyan)';
+            displayMessage = `${name}: <span class="history-score" style="color: ${scoreColor}; text-shadow: 0 0 6px ${scoreColor};">${score}</span> (${change})`;
+          }
+        }
+        
+        html += `
+          <div class="history-item" style="border-left-color: ${borderColor}; animation-delay: ${index * 0.05}s;">
+            <div class="flex justify-between items-center">
+              <span class="text-sm">${displayMessage}</span>
+              <span class="text-xs flex-shrink-0 ml-2" style="color: var(--text-muted);">${item.time}</span>
+            </div>
+          </div>
+        `;
+      });
+      
+      historyLogEl.innerHTML = html;
+    }
+
+    // ============ Modal Functions ============
+    function showModal(title, message, onConfirm) {
+      modalTitleEl.textContent = title;
+      modalMessageEl.textContent = message;
+      modalCallback = onConfirm;
+      modalEl.classList.add('active');
+    }
+
+    function hideModal() {
+      modalEl.classList.remove('active');
+      modalCallback = null;
+    }
+
+    // ============ Event Bindings ============
+    function bindEvents() {
+      // Player list clicks
+      playerListEl.addEventListener('click', (e) => {
+        const card = e.target.closest('.player-card');
+        if (card) {
+          selectPlayer(card.dataset.playerId);
+        }
+      });
+
+      // Keyboard navigation for player cards
+      playerListEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const card = e.target.closest('.player-card');
+          if (card) {
+            e.preventDefault();
+            selectPlayer(card.dataset.playerId);
+          }
+        }
+      });
+
+      // Score buttons
+      scoreButtonsEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.score-btn');
+        if (btn) {
+          const points = parseInt(btn.dataset.points, 10);
+          if (flip7Mode) {
+            toggleHighlight(points);
+          } else {
+            addScore(points);
+          }
+        }
+      });
+
+      // Mode toggle / Add button
+      modeToggleEl.addEventListener('click', () => {
+        if (flip7Mode) {
+          executeFlip7Add();
+        } else {
+          toggleMode();
+        }
+      });
+
+      // Reset buttons
+      document.getElementById('resetPlayerBtn').addEventListener('click', () => {
+        if (selectedPlayerId) {
+          resetPlayerScore(selectedPlayerId);
+        }
+      });
+
+      document.getElementById('removePlayerBtn').addEventListener('click', () => {
+        if (selectedPlayerId && players.length > 1) {
+          removePlayer(selectedPlayerId);
+        }
+      });
+
+      document.getElementById('resetAllBtn').addEventListener('click', resetAllScores);
+
+      // Add player button
+      addPlayerBtnEl.addEventListener('click', addPlayer);
+
+      // Config button
+      document.getElementById('configBtn').addEventListener('click', () => {
+        configModalEl.classList.add('active');
+      });
+
+      document.getElementById('configClose').addEventListener('click', () => {
+        configModalEl.classList.remove('active');
+      });
+
+      // Flip 7 switch
+      flip7SwitchEl.addEventListener('click', toggleFlip7Mode);
+      flip7SwitchEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleFlip7Mode();
+        }
+      });
+
+      // More Winner switch
+      moreWinnerSwitchEl.addEventListener('click', toggleMoreWinnerMode);
+      moreWinnerSwitchEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleMoreWinnerMode();
+        }
+      });
+
+      // Minimal mode switch
+      minimalSwitchEl.addEventListener('click', toggleMinimalMode);
+      minimalSwitchEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleMinimalMode();
+        }
+      });
+
+      // Two Rows switch
+      twoRowsSwitchEl.addEventListener('click', toggleTwoRowsMode);
+      twoRowsSwitchEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleTwoRowsMode();
+        }
+      });
+
+      // Target score
+      targetScoreEl.addEventListener('click', editTargetScore);
+      targetScoreEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          editTargetScore();
+        }
+      });
+
+      // Name edit
+      selectedNameEl.addEventListener('click', () => {
+        if (selectedPlayerId) {
+          editPlayerName(selectedPlayerId);
+        }
+      });
+
+      // Color edit
+      selectedIndicatorEl.addEventListener('click', () => {
+        if (selectedPlayerId) {
+          editPlayerColor(selectedPlayerId);
+        }
+      });
+
+      // Clear history
+      document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+        history = [];
+        renderHistory();
+      });
+
+      // Modal events
+      document.getElementById('modalCancel').addEventListener('click', hideModal);
+      document.getElementById('modalConfirm').addEventListener('click', () => {
+        if (modalCallback) {
+          modalCallback();
+        }
+        hideModal();
+      });
+
+      // Close modals on overlay click
+      modalEl.addEventListener('click', (e) => {
+        if (e.target === modalEl) {
+          hideModal();
+        }
+      });
+
+      configModalEl.addEventListener('click', (e) => {
+        if (e.target === configModalEl) {
+          configModalEl.classList.remove('active');
+        }
+      });
+
+      nameModalEl.addEventListener('click', (e) => {
+        if (e.target === nameModalEl) {
+          nameModalEl.classList.remove('active');
+        }
+      });
+
+      targetModalEl.addEventListener('click', (e) => {
+        if (e.target === targetModalEl) {
+          targetModalEl.classList.remove('active');
+        }
+      });
+
+      colorModalEl.addEventListener('click', (e) => {
+        if (e.target === colorModalEl) {
+          colorModalEl.classList.remove('active');
+        }
+      });
+
+      // Name modal - enter key to confirm
+      nameInputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('nameModalConfirm').click();
+        }
+        if (e.key === 'Escape') {
+          nameModalEl.classList.remove('active');
+        }
+      });
+
+      // Target modal - enter key to confirm
+      targetInputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('targetModalConfirm').click();
+        }
+        if (e.key === 'Escape') {
+          targetModalEl.classList.remove('active');
+        }
+      });
+
+      // Close modal on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (modalEl.classList.contains('active')) {
+            hideModal();
+          }
+          if (nameModalEl.classList.contains('active')) {
+            nameModalEl.classList.remove('active');
+          }
+          if (configModalEl.classList.contains('active')) {
+            configModalEl.classList.remove('active');
+          }
+          if (targetModalEl.classList.contains('active')) {
+            targetModalEl.classList.remove('active');
+          }
+          if (colorModalEl.classList.contains('active')) {
+            colorModalEl.classList.remove('active');
+          }
+        }
+      });
+    }
+
+    // ============ Start ============
+    init();
   </script>
 </body>
 </html>
